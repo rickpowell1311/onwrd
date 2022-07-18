@@ -5,11 +5,11 @@ namespace Onwrd.EntityFrameworkCore.Internal
 {
     internal class SaveChangesInterceptor : Microsoft.EntityFrameworkCore.Diagnostics.SaveChangesInterceptor
     {
-        private readonly Func<IOnwardProcessor> onwardProcessorFactory;
+        private readonly IOnwardProcessor onwardProcessor;
 
-        public SaveChangesInterceptor(Func<IOnwardProcessor> onwardProcessorFactory)
+        public SaveChangesInterceptor(IOnwardProcessor onwardProcessor)
         {
-            this.onwardProcessorFactory = onwardProcessorFactory;
+            this.onwardProcessor = onwardProcessor;
         }
 
         public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
@@ -33,7 +33,7 @@ namespace Onwrd.EntityFrameworkCore.Internal
             var saveChangesWrapper = new SaveChangesWrapper(eventData.Context, async () =>
             {
                 innerResult = await base.SavingChangesAsync(eventData, result, cancellationToken);
-            }, this.onwardProcessorFactory);
+            }, this.onwardProcessor);
 
             await saveChangesWrapper.SaveChangesAsync();
 

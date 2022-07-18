@@ -1,17 +1,24 @@
-﻿namespace Onwrd.EntityFrameworkCore
+﻿using Microsoft.Extensions.DependencyInjection;
+using Onwrd.EntityFrameworkCore.Internal;
+
+namespace Onwrd.EntityFrameworkCore
 {
     public class OutboxingConfiguration
     {
-        internal Func<IOnwardProcessor> OnwardProcessorFactory { get; private set; }
+        private readonly IServiceCollection serviceCollection;
 
-        public OutboxingConfiguration()
+        internal OutboxingConfiguration(IServiceCollection serviceCollection)
         {
-
+            this.serviceCollection = serviceCollection;
         }
 
-        public void UseOnwardProcessor(Func<IOnwardProcessor> onwardProcessorFactory)
+        public void UseOnwardProcessor<T>()
+            where T : class, IOnwardProcessor
         {
-            this.OnwardProcessorFactory = onwardProcessorFactory;
+            if (!this.serviceCollection.Any(x => x.ServiceType == typeof(T)))
+            {
+                this.serviceCollection.AddTransient<IOnwardProcessor, T>();
+            }
         }
     }
 }

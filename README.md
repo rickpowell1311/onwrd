@@ -15,15 +15,17 @@ Many .NET developers adopt [Entity Framework Core](https://docs.microsoft.com/en
 Configure the DbContext to use outboxing:
 
 ```
-services.AddDbContext<MyContext>(builder =>
-{
-    // Your context configuration here...
-    builder.UseInMemoryDatabase("MyDatabase"); // Only in-memory implementation currently supported
-    builder.AddOutboxing(cfg =>
+services.AddOutboxedDbContext<MyContext>(
+    (serviceProvider, builder) =>
     {
-        cfg.UseOnwardProcessor(() => new MyOnwardProcessor());
+        // Your context configuration here...
+        builder.UseInMemoryDatabase("MyDatabase"); // Only in-memory implementation currently supported
+    },
+    outboxingConfig => 
+    {
+        // Outboxing configuration here
+        outboxingConfig.UseOnwardProcessor<MyOnwardProcessor>();
     });
-});
 ```
 
 # Example usage
@@ -112,7 +114,6 @@ Onwrd is built and maintained under an MIT license and always will be.
 
 # Short term roadmap
 
-- Native integration with IOC containers (prioritising Microsoft Dependency Injection)
 - Support for multiple DB providers (prioritising SQL Server)
   - Implement embedded migration tooling
 - Support for integrating with logging providers (prioritising Serilog)

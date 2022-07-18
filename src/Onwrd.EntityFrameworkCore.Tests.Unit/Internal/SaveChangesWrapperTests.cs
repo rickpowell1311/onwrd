@@ -93,7 +93,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Unit.Internal
             return new SaveChangesWrapper(
                 this.testContext,
                 () => this.testContext.SaveChangesAsync(),
-                () => this.onwardProcessor);
+                this.onwardProcessor);
         }
 
         internal class TestContext : DbContext
@@ -110,7 +110,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Unit.Internal
                 {
                     var optionsBuilder = new DbContextOptionsBuilder<TestContext>();
                     optionsBuilder.UseInMemoryDatabase(Guid.NewGuid().ToString());
-                    optionsBuilder.AddOutboxing(cfg => { });
+                    optionsBuilder.AddOutboxing();
 
                     return optionsBuilder.Options;
                 }

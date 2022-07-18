@@ -7,16 +7,16 @@ namespace Onwrd.EntityFrameworkCore.Internal
     {
         private readonly DbContext context;
         private readonly Func<Task> saveChangesCallback;
-        private readonly Func<IOnwardProcessor> onwardProcessorFactory;
+        private readonly IOnwardProcessor onwardProcessor;
 
         internal SaveChangesWrapper(
             DbContext context, 
             Func<Task> saveChangesCallback,
-            Func<IOnwardProcessor> onwardProcessorFactory)
+            IOnwardProcessor onwardProcessor)
         {
             this.context = context;
             this.saveChangesCallback = saveChangesCallback;
-            this.onwardProcessorFactory = onwardProcessorFactory;
+            this.onwardProcessor = onwardProcessor;
         }
 
         public async Task SaveChangesAsync()
@@ -25,8 +25,6 @@ namespace Onwrd.EntityFrameworkCore.Internal
             var additions = this.context.AddToOutbox(messages);
 
             await saveChangesCallback();
-
-            var onwardProcessor = this.onwardProcessorFactory?.Invoke();
 
             if (onwardProcessor != null)
             {

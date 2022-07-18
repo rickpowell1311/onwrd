@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Onwrd.EntityFrameworkCore.Internal;
 using Xunit;
 
 namespace Onwrd.EntityFrameworkCore.Tests.Unit
@@ -7,28 +8,28 @@ namespace Onwrd.EntityFrameworkCore.Tests.Unit
     public class EndToEndTests
     {
         private readonly ServiceProvider serviceProvider;
-        private bool messageSent = false;
 
         public EndToEndTests()
         {
-            var onwardProcessor = new TestOnwardProcessor();
-            onwardProcessor.MessageSent += ((object message, MessageMetadata metadata) input) => messageSent = true;
-
             var services = new ServiceCollection();
-            services.AddDbContext<TestContext>(builder =>
-            {
-                builder.UseInMemoryDatabase($"TestContext-{Guid.NewGuid()}");
-                builder.AddOutboxing(cfg =>
+            services.AddOutboxedDbContext<TestContext>(
+                (_, builder) =>
                 {
-                    cfg.UseOnwardProcessor(() => onwardProcessor);
-                });
-            }, ServiceLifetime.Transient);
+                    builder.UseInMemoryDatabase($"TestContext-{Guid.NewGuid()}");
+                },
+                outboxingConfig =>
+                {
+                    outboxingConfig.UseOnwardProcessor<TestOnwardProcessor>();
+                },
+                ServiceLifetime.Transient);
+
+            services.AddSingleton<SentMessageAudit>();
 
             this.serviceProvider = services.BuildServiceProvider();
         }
 
         [Fact]
-        public async Task SaveChanges_ForInMemoryConfiguration_DoesNotThrow()
+        public async Task SaveChanges_ForInMemoryConfiguration_DispatchesMessage()
         {
             var context = serviceProvider.GetService<TestContext>();
 
@@ -39,7 +40,9 @@ namespace Onwrd.EntityFrameworkCore.Tests.Unit
 
             await context.SaveChangesAsync();
 
-            Assert.True(messageSent);
+            var sentMessageAudit = serviceProvider.GetService<SentMessageAudit>();
+
+            Assert.Single(sentMessageAudit.SentMessages);
         }
 
         internal class TestContext : DbContext
@@ -82,13 +85,35 @@ namespace Onwrd.EntityFrameworkCore.Tests.Unit
 
         internal class TestOnwardProcessor : IOnwardProcessor
         {
-            public event Action<(object Message, MessageMetadata Metadata)> MessageSent;
+            private readonly SentMessageAudit sentMessageAudit;
+
+            public TestOnwardProcessor(SentMessageAudit sentMessageAudit)
+            {
+                this.sentMessageAudit = sentMessageAudit;
+            }
 
             public Task Process<T>(T message, MessageMetadata messageMetadata)
             {
-                MessageSent((message, messageMetadata));
+                this.sentMessageAudit.Audit(message);
 
                 return Task.CompletedTask;
+            }
+        }
+
+        internal class SentMessageAudit
+        {
+            private readonly List<object> _sentMessages;
+
+            public IEnumerable<object> SentMessages => _sentMessages;
+
+            public SentMessageAudit()
+            {
+                _sentMessages = new List<object>();
+            }
+
+            public void Audit(object message)
+            {
+                _sentMessages.Add(message);
             }
         }
     }
