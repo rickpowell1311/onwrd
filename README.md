@@ -19,7 +19,7 @@ services.AddOutboxedDbContext<MyContext>(
     (serviceProvider, builder) =>
     {
         // Your context configuration here...
-        builder.UseInMemoryDatabase("MyDatabase"); // Only in-memory implementation currently supported
+        builder.UseSqlServer($"Server=.;Database=onwrd-{databaseUniqueId};Trusted_Connection=True;");
     },
     outboxingConfig => 
     {
@@ -92,6 +92,16 @@ public class MakePurchase
 }
 ```
 
+# Supported DB Providers
+
+Currently Onwrd supports the following DB providers:
+- In-Memory 
+- SQL Server
+
+Support is currently limited by the migration mechanism for maintaining the Onwrd schema. Other DB Providers may work out of the box, however they are not officially tested or supported at the moment.
+
+Further DB Providers will be supported in future.
+
 # Comparisons with other frameworks
 
 ## [CAP](https://github.com/dotnetcore/CAP)
@@ -114,8 +124,7 @@ Onwrd is built and maintained under an MIT license and always will be.
 
 # Short term roadmap
 
-- Support for multiple DB providers (prioritising SQL Server)
-  - Implement embedded migration tooling
+- Support for more DB providers
 - Support for integrating with logging providers (prioritising Serilog)
 - Support for batched message onward processing
 - Support for retry mechanisms

@@ -1,24 +1,22 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Onwrd.EntityFrameworkCore.Internal;
+﻿using Onwrd.EntityFrameworkCore.Internal;
 
 namespace Onwrd.EntityFrameworkCore
 {
     public class OutboxingConfiguration
     {
-        private readonly IServiceCollection serviceCollection;
+        internal Type OnwardProcessorType { get; private set; }
 
-        internal OutboxingConfiguration(IServiceCollection serviceCollection)
+        public bool RunMigrations { get; set; } = true;
+
+        internal OutboxingConfiguration()
         {
-            this.serviceCollection = serviceCollection;
+            OnwardProcessorType = typeof(NoOpOnwardProcessor);
         }
 
         public void UseOnwardProcessor<T>()
             where T : class, IOnwardProcessor
         {
-            if (!this.serviceCollection.Any(x => x.ServiceType == typeof(T)))
-            {
-                this.serviceCollection.AddTransient<IOnwardProcessor, T>();
-            }
+            OnwardProcessorType = typeof(T);
         }
     }
 }

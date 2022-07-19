@@ -1,15 +1,27 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Onwrd.EntityFrameworkCore.Internal;
 using Xunit;
 
 namespace Onwrd.EntityFrameworkCore.Tests.Unit
 {
-    public class EndToEndTests
+    public class EndToEndTests : IDisposable
     {
-        private readonly ServiceProvider serviceProvider;
+        private IServiceProvider serviceProvider;
 
-        public EndToEndTests()
+        public void Dispose()
+        {
+            if (this.serviceProvider != null)
+            {
+                var context = this.serviceProvider.GetRequiredService<TestContext>();
+                context.Database.EnsureDeleted();
+            }
+        }
+
+        [Fact]
+        public async Task SaveChanges_ForInMemoryConfiguration_DispatchesMessage()
         {
             var services = new ServiceCollection();
             services.AddOutboxedDbContext<TestContext>(
@@ -26,12 +38,42 @@ namespace Onwrd.EntityFrameworkCore.Tests.Unit
             services.AddSingleton<SentMessageAudit>();
 
             this.serviceProvider = services.BuildServiceProvider();
+
+            await ExecuteEndToEndTest();
         }
 
         [Fact]
-        public async Task SaveChanges_ForInMemoryConfiguration_DispatchesMessage()
+        public async Task SaveChanges_ForSqlServerConfiguration_DispatchesMessage()
         {
-            var context = serviceProvider.GetService<TestContext>();
+            var services = new ServiceCollection();
+            var databaseUniqueId = Guid.NewGuid();
+            services.AddOutboxedDbContext<TestContext>(
+                (_, builder) =>
+                {
+                    builder
+                        .UseSqlServer($"Server=.;Database=onwrd-{databaseUniqueId};Trusted_Connection=True;");
+                },
+                outboxingConfig =>
+                {
+                    outboxingConfig.UseOnwardProcessor<TestOnwardProcessor>();
+                    /* Because we have a unique database for each test, we can just let this context
+                       control the creation of the schema */
+                    outboxingConfig.RunMigrations = false;
+                },
+                ServiceLifetime.Transient);
+
+            services.AddSingleton<SentMessageAudit>();
+
+            this.serviceProvider = services.BuildServiceProvider();
+
+            await ExecuteEndToEndTest();
+        }
+
+        private async Task ExecuteEndToEndTest()
+        {
+            // Run migrations
+            var context = this.serviceProvider.GetService<TestContext>();
+            await context.Database.EnsureCreatedAsync();
 
             var testEntity = new TestEntity();
             testEntity.AddMessageToOutbox();
@@ -40,7 +82,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Unit
 
             await context.SaveChangesAsync();
 
-            var sentMessageAudit = serviceProvider.GetService<SentMessageAudit>();
+            var sentMessageAudit = this.serviceProvider.GetService<SentMessageAudit>();
 
             Assert.Single(sentMessageAudit.SentMessages);
         }
@@ -51,6 +93,21 @@ namespace Onwrd.EntityFrameworkCore.Tests.Unit
 
             public TestContext(DbContextOptions<TestContext> options) : base(options)
             {
+            }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder)
+            {
+                var testEntityConfig = modelBuilder.Entity<TestEntity>();
+
+                testEntityConfig.ToTable("TestEntity", "EndToEndTests");
+
+                testEntityConfig.HasKey(x => x.Id);
+
+                testEntityConfig
+                    .Property(x => x.Id)
+                    .ValueGeneratedNever();
+
+                base.OnModelCreating(modelBuilder);
             }
         }
 

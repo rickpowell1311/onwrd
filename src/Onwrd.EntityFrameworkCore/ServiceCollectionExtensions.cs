@@ -1,6 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Onwrd.EntityFrameworkCore.Internal;
+using Onwrd.EntityFrameworkCore.Internal.Migrations;
+using System.Reflection;
 
 namespace Onwrd.EntityFrameworkCore
 {
@@ -14,22 +18,51 @@ namespace Onwrd.EntityFrameworkCore
             ServiceLifetime optionsLifetime = ServiceLifetime.Scoped)
             where TContext : DbContext
         {
-            var config = new OutboxingConfiguration(serviceCollection);
+            // Core onwrd services
+            var config = new OutboxingConfiguration();
             outboxingConfiguration(config);
 
-            serviceCollection.AddTransient<SaveChangesInterceptor>();
+            serviceCollection.AddSingleton(config);
 
-            Action<IServiceProvider, DbContextOptionsBuilder> optionsActionOverride = (IServiceProvider serviceProvider, DbContextOptionsBuilder builder) =>
+            if (!serviceCollection.Any(x => x.ServiceType == config.OnwardProcessorType))
+            {
+                serviceCollection.AddTransient(typeof(IOnwardProcessor), config.OnwardProcessorType);
+            }
+
+            serviceCollection.AddTransient<SaveChangesInterceptor>();
+            serviceCollection.AddTransient<OnConnectingInterceptor>();
+            serviceCollection.AddSingleton<RunOnce>();
+            serviceCollection.AddTransient<Startup>();
+
+            void optionsActionOverride(IServiceProvider serviceProvider, DbContextOptionsBuilder builder)
             {
                 optionsAction(serviceProvider, builder);
                 builder.AddOutboxing();
-                builder.AddInterceptors(serviceProvider.GetRequiredService<SaveChangesInterceptor>());
-            };
+                builder.AddInterceptors(
+                    serviceProvider.GetRequiredService<SaveChangesInterceptor>(),
+                    serviceProvider.GetRequiredService<OnConnectingInterceptor>());
+            }
 
+            // Migration services
             serviceCollection.AddDbContext<TContext>(
                 optionsActionOverride,
                 contextLifetime,
                 optionsLifetime);
+
+            void migrationOptionsActionOverride(IServiceProvider serviceProvider, DbContextOptionsBuilder builder)
+            {
+                optionsAction(serviceProvider, builder);
+                builder.AddOutboxing();
+                builder.ReplaceService<IMigrationsAssembly, OnwrdMigrationsAssembly>();
+                builder.ReplaceService<IMigrator, OnwrdMigrator>();
+            }
+
+            serviceCollection.AddDbContext<MigrationContext>(
+                migrationOptionsActionOverride,
+                ServiceLifetime.Transient,
+                ServiceLifetime.Transient);
+
+            serviceCollection.AddTransient<IOnwrdMigration, Create>();
 
             return serviceCollection;
         }
