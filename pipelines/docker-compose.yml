@@ -1,0 +1,23 @@
+ version: "3.7"
+
+ services:
+   tests:
+     image: mcr.microsoft.com/dotnet/sdk:6.0
+     command: /onwrd/pipelines/build.sh
+     working_dir: /onwrd/pipelines
+     volumes:
+       - ../:/onwrd
+     depends_on:
+       - db
+     environment:
+        VERSION: ${NUKE_VERSION}
+        NUGET_API_KEY: ${NUKE_NUGETAPIKEY}
+        IS_RUNNING_IN_CONTAINER: true
+        DATABASE_SERVER: db
+        DATABASE_USER: sa
+        DATABASE_PASSWORD: "Qx#)T@pzKgAV^+tw"
+   db:
+    image: "mcr.microsoft.com/mssql/server"
+    environment:
+        SA_PASSWORD: "Qx#)T@pzKgAV^+tw"
+        ACCEPT_EULA: "Y"

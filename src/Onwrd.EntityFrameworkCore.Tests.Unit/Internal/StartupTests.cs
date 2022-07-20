@@ -15,11 +15,11 @@ namespace Onwrd.EntityFrameworkCore.Tests.Unit.Internal
         public async Task Initialize_WhenUsingInMemoryDatabaseConfiguration_DoesNotThrow(bool isAsync)
         {
             var services = new ServiceCollection();
-            var databaseUniqueId = Guid.NewGuid();
+            var databaseUniqueId = $"onward-{Guid.NewGuid()}";
             services.AddOutboxedDbContext<TestContext>(
                 (_, builder) =>
                 {
-                    builder.UseInMemoryDatabase($"onwrd-{databaseUniqueId}");
+                    builder.UseInMemoryDatabase(databaseUniqueId);
                 },
                 outboxingConfig => { },
                 ServiceLifetime.Transient);
@@ -43,12 +43,12 @@ namespace Onwrd.EntityFrameworkCore.Tests.Unit.Internal
         public async Task Initialize_WhenUsingSqlServerDatabaseConfiguration_DoesNotThrow(bool isAsync)
         {
             var services = new ServiceCollection();
-            var databaseUniqueId = Guid.NewGuid();
+            var databaseUniqueId = $"onward-{Guid.NewGuid()}";
             services.AddOutboxedDbContext<TestContext>(
                 (_, builder) =>
                 {
                     builder
-                        .UseSqlServer($"Server=.;Database=onwrd-{databaseUniqueId};Trusted_Connection=True;");
+                        .UseSqlServer(SqlServerConnectionString.ForDatabase(databaseUniqueId));
                 },
                 outboxingConfig => { },
                 ServiceLifetime.Transient);

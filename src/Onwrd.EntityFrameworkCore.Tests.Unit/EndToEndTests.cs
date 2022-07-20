@@ -24,10 +24,11 @@ namespace Onwrd.EntityFrameworkCore.Tests.Unit
         public async Task SaveChanges_ForInMemoryConfiguration_DispatchesMessage()
         {
             var services = new ServiceCollection();
+            var databaseUniqueId = $"onward-{Guid.NewGuid()}";
             services.AddOutboxedDbContext<TestContext>(
                 (_, builder) =>
                 {
-                    builder.UseInMemoryDatabase($"TestContext-{Guid.NewGuid()}");
+                    builder.UseInMemoryDatabase(databaseUniqueId);
                 },
                 outboxingConfig =>
                 {
@@ -46,12 +47,12 @@ namespace Onwrd.EntityFrameworkCore.Tests.Unit
         public async Task SaveChanges_ForSqlServerConfiguration_DispatchesMessage()
         {
             var services = new ServiceCollection();
-            var databaseUniqueId = Guid.NewGuid();
+            var databaseUniqueId = $"onward-{Guid.NewGuid()}";
             services.AddOutboxedDbContext<TestContext>(
                 (_, builder) =>
                 {
                     builder
-                        .UseSqlServer($"Server=.;Database=onwrd-{databaseUniqueId};Trusted_Connection=True;");
+                        .UseSqlServer(SqlServerConnectionString.ForDatabase(databaseUniqueId));
                 },
                 outboxingConfig =>
                 {
