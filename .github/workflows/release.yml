@@ -9,6 +9,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          approvers: rickpowell1311
 
       - name: Evaluate build version
         run: echo "ONWRD_VERSION=0.2.${{ github.run_number }}-beta" >> $GITHUB_ENV
@@ -19,5 +21,3 @@ jobs:
         env:
           ONWRD_NUGETAPIKEY: ${{ secrets.ONWRD_NUGETAPIKEY }}
           ONWRD_PUSHPACKAGE: true
-        with:
-            approvers: rickpowell1311
