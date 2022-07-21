@@ -39,10 +39,14 @@ class Build : NukeBuild
     [Parameter("Is Running In Container")]
     bool IsRunningInContainer { get; set; }
 
+    [Parameter("Push Package")]
+    bool PushPackage { get; set; }
+
     Target Initialize => _ => _
         .Executes(() =>
         {
             Console.WriteLine($"{nameof(IsRunningInContainer)}: {IsRunningInContainer}");
+            Console.WriteLine($"{nameof(PushPackage)}: {PushPackage}");
             Console.WriteLine($"{nameof(SourceDirectory)}: {SourceDirectory}");
             Console.WriteLine($"{nameof(ArtifactDirectory)}: {ArtifactDirectory}");
             Console.WriteLine($"{nameof(ProjectDirectories)}: {ProjectDirectories.Select(x => $"\r\n  - {x}").Aggregate((prev, curr) => $"{prev}{curr}")}");
@@ -102,9 +106,9 @@ class Build : NukeBuild
         .DependsOn(Package)
         .Executes(() =>
         {
-            if (IsLocalBuild)
+            if (!PushPackage)
             {
-                Console.WriteLine("Build IsLocalBuild: Skipping package publishing");
+                Console.WriteLine("PushPackage is set to flase: Skipping NuGet package push");
                 return;
             }
 

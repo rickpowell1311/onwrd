@@ -10,12 +10,13 @@
      depends_on:
        - db
      environment:
-        VERSION: ${NUKE_VERSION}
-        NUGET_API_KEY: ${NUKE_NUGETAPIKEY}
+        VERSION: ${ONWRD_VERSION}
+        NUGET_API_KEY: ${ONWRD_NUGETAPIKEY}
         IS_RUNNING_IN_CONTAINER: true
         DATABASE_SERVER: db
         DATABASE_USER: sa
         DATABASE_PASSWORD: "Qx#)T@pzKgAV^+tw"
+        PUSH_PACKAGE: ${ONWRD_PUSHPACKAGE}
    db:
     image: "mcr.microsoft.com/mssql/server"
     environment:

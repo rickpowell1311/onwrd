@@ -70,6 +70,10 @@
             "type": "string"
           }
         },
+        "PushPackage": {
+          "type": "boolean",
+          "description": "Push Package"
+        },
         "Root": {
           "type": "string",
           "description": "Root directory during build execution"
