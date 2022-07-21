@@ -3,8 +3,8 @@
  services:
    tests:
      image: mcr.microsoft.com/dotnet/sdk:6.0
-     command: /onwrd/pipelines/build.sh
-     working_dir: /onwrd/pipelines
+     command: dotnet run
+     working_dir: /onwrd/pipelines/build
      volumes:
        - ../:/onwrd
      depends_on:
