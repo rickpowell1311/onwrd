@@ -10,7 +10,7 @@ Reliably ensuring that onward processing happens after a business transaction ha
 
 Take an example of needing to send an email after a purchase has been made. Typically in this scenario, the details of the purchase will likely be stored in a database, and then an email sent afterwards. In a modern distributed architecture, this email is most likely to be sent as a result of a message being sent on an event bus, but what happens if the this *onward* service (the event bus) is not available? The purchase may have already been stored and the originating purchase request needs to finish processing in a timely manner... This is the kind of problem that the [outboxing pattern](https://microservices.io/patterns/data/transactional-outbox.html) helps solve.
 
-Many .NET developers adopt [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/) as their chosen ORM. As a result, implementing the outboxing pattern with EF core is a common use-case. Onward makes this implementation trivial.
+Many .NET developers adopt [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/) as their chosen ORM. As a result, implementing the outboxing pattern with EF core is a common use-case. Onwrd makes this implementation trivial.
 
 # Quick start
 
