@@ -5,14 +5,10 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "*" ]
+    branches: [ "main" ]
 
   workflow_dispatch:
     
-env:
-  VERSION: 0.2.${GITHUB_RUN_NUMBER}-beta
-  NUGET_API_KEY: ${secrets.NUGET_API_KEY}
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,14 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Evaluate whether package should be pushed (true)
-        run: echo "ONWRD_PUSHPACKAGE=true" >> $GITHUB_ENV
-        if: ${{ github.ref == 'main' }}
-
-      - name: Evaluate whether package should be pushed (false)
-        run: echo "ONWRD_PUSHPACKAGE=false" >> $GITHUB_ENV
-        if: ${{ github.ref != 'main' }}
+      - name: Evaluate build version
+        run: echo "ONWRD_VERSION=0.2.${{ github.run_number }}-beta" >> $GITHUB_ENV
 
       - name: Run docker compose (with NUKE build)
         working-directory: ./pipelines
         run: docker compose up  --abort-on-container-exit
+        env:
+          ONWRD_NUGETAPIKEY: ${{ secrets.ONWRD_NUGETAPIKEY }}
+          ONWRD_PUSHPACKAGE: true
