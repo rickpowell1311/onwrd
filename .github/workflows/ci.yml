@@ -19,6 +19,6 @@ jobs:
         working-directory: ./pipelines
         run: docker compose up  --abort-on-container-exit
         env:
-          ONWRD_VERSION: "0.1" # Doesn't matter for PR builds because no packages get pushed  
+          ONWRD_VERSION: "0.1" # Doesn't matter for CI builds because no packages get pushed  
           ONWRD_NUGETAPIKEY: ${{ secrets.ONWRD_NUGETAPIKEY }}
           ONWRD_PUSHPACKAGE: false
