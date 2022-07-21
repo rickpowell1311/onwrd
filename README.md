@@ -1,4 +1,4 @@
-[![CI](https://github.com/rickpowell1311/onwrd/actions/workflows/ci.yml/badge.svg)](https://github.com/rickpowell1311/onwrd/actions/workflows/ci.yml)
+[![Release](https://github.com/rickpowell1311/onwrd/actions/workflows/release.yml/badge.svg)](https://github.com/rickpowell1311/onwrd/actions/workflows/release.yml)
 
 # Onwrd
 
