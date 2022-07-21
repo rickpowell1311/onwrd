@@ -1,3 +1,5 @@
+[![CI](https://github.com/rickpowell1311/onwrd/actions/workflows/ci.yml/badge.svg)](https://github.com/rickpowell1311/onwrd/actions/workflows/ci.yml)
+
 # Onwrd
 
 Adopt the outboxing pattern with Entity Framework Core. 
