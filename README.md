@@ -21,7 +21,7 @@ services.AddOutboxedDbContext<MyContext>(
     (serviceProvider, builder) =>
     {
         // Your context configuration here...
-        builder.UseSqlServer($"Server=.;Database=onwrd-{databaseUniqueId};Trusted_Connection=True;");
+        builder.UseSqlServer($"Server=.;Database=mydatabase;Trusted_Connection=True;");
     },
     outboxingConfig => 
     {
