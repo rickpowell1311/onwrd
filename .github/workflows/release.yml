@@ -13,7 +13,7 @@ jobs:
           approvers: rickpowell1311
 
       - name: Evaluate build version
-        run: echo "ONWRD_VERSION=0.2.${{ github.run_number }}-beta" >> $GITHUB_ENV
+        run: echo "ONWRD_VERSION=0.3.${{ github.run_number }}-beta" >> $GITHUB_ENV
 
       - name: Run docker compose (with NUKE build)
         working-directory: ./pipelines
