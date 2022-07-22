@@ -25,106 +25,71 @@ class Build : NukeBuild
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode
 
-    public static int Main() => Execute<Build>(x => x.PublishPackage);
+    public static int Main() => Execute<Build>(x => x.GenerateArtifacts);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
-    [Parameter("Nuget API Key")]
-    string NuGetApiKey { get; set; }
-
     [Parameter("Version")]
     string Version { get; set; }
 
-    [Parameter("Is Running In Container")]
-    bool IsRunningInContainer { get; set; }
-
-    [Parameter("Push Package")]
-    bool PushPackage { get; set; }
+    [Parameter("Artifacts Directory")]
+    string ArtifactDirectory { get; set; }
 
     Target Initialize => _ => _
         .Executes(() =>
         {
-            Console.WriteLine($"{nameof(IsRunningInContainer)}: {IsRunningInContainer}");
-            Console.WriteLine($"{nameof(PushPackage)}: {PushPackage}");
             Console.WriteLine($"{nameof(SourceDirectory)}: {SourceDirectory}");
             Console.WriteLine($"{nameof(ArtifactDirectory)}: {ArtifactDirectory}");
             Console.WriteLine($"{nameof(ProjectDirectories)}: {ProjectDirectories.Select(x => $"\r\n  - {x}").Aggregate((prev, curr) => $"{prev}{curr}")}");
             Console.WriteLine($"{nameof(RootDirectory)}: {RootDirectory}");
             Console.WriteLine($"{nameof(Configuration)}: {Configuration}");
             Console.WriteLine($"{nameof(Version)}: {Version}");
-            Console.WriteLine($"{nameof(NuGetApiKey)}: {(string.IsNullOrWhiteSpace(NuGetApiKey) ? "EMPTY" : "*************")}");
         });
 
-    Target Clean => _ => _
+    Target Test => _ => _
         .DependsOn(Initialize)
         .Executes(() =>
         {
-            if (IsRunningInContainer)
+            foreach (var testProjectDirectory in TestProjectDirectories)
             {
-                Console.WriteLine("Skipping clean: The build is running in a container");
-                return;
-            }
-
-            foreach (var projectDirectory in ProjectDirectories)
-            {
-                DotNet($"clean -c Release", workingDirectory: projectDirectory);
+                Docker("compose up --abort-on-container-exit", workingDirectory: testProjectDirectory);
             }
         });
 
     Target Compile => _ => _
-        .DependsOn(Clean)
+        .DependsOn(Test)
         .Executes(() =>
         {
-            foreach (var projectDirectory in ProjectDirectories)
+            foreach (var packagableProjectDirectory in PackagableProjectDirectories)
             {
-                DotNet($"build -c Release -p:Version={Version}", workingDirectory: projectDirectory);
+                DotNet("build -c Release", workingDirectory: packagableProjectDirectory);
             }
         });
 
-    Target Test => _ => _
+    Target GenerateArtifacts => _ => _
         .DependsOn(Compile)
         .Executes(() =>
         {
-            foreach (var project in TestProjectDirectories)
+            var artifactsDirectory = RepositoryRoot / ArtifactDirectory;
+            EnsureCleanDirectory(artifactsDirectory);
+
+            foreach (var artifactProjectDirectory in PackagableProjectDirectories)
             {
-                DotNet("test -c Release --no-build --no-restore", workingDirectory: project);
+                var targetDir = artifactsDirectory / artifactProjectDirectory.Name;
+
+                CopyDirectoryRecursively(artifactProjectDirectory, targetDir);
             }
         });
 
-    Target Package => _ => _
-        .DependsOn(Test, Compile)
-        .Executes(() =>
-        {
-            foreach (var packageProjectDirectory in PackageProjectDirectories)
-            {
-                DotNet($"pack -c Release -o {ArtifactDirectory} -p:PackageVersion={Version}  --no-restore  --no-build", workingDirectory: packageProjectDirectory);
-            }
-        });
-
-    Target PublishPackage => _ => _
-        .DependsOn(Package)
-        .Executes(() =>
-        {
-            if (!PushPackage)
-            {
-                Console.WriteLine("PushPackage is set to flase: Skipping NuGet package push");
-                return;
-            }
-
-            DotNet(
-                $"nuget push *.nupkg -s https://api.nuget.org/v3/index.json -k {NuGetApiKey}",
-                workingDirectory: ArtifactDirectory);
-        });
+    AbsolutePath RepositoryRoot => RootDirectory / "..";
 
     AbsolutePath SourceDirectory => RootDirectory / "../src";
 
     IEnumerable<AbsolutePath> ProjectDirectories => SourceDirectory.GlobDirectories("Onwrd.*");
 
-    IEnumerable<AbsolutePath> TestProjectDirectories => SourceDirectory.GlobDirectories("Onwrd.*Tests*");
-
-    IEnumerable<AbsolutePath> PackageProjectDirectories => ProjectDirectories
+    IEnumerable<AbsolutePath> PackagableProjectDirectories => ProjectDirectories
         .Where(x => !TestProjectDirectories.Contains(x));
 
-    AbsolutePath ArtifactDirectory => RootDirectory / "../artifacts";
+    IEnumerable<AbsolutePath> TestProjectDirectories => SourceDirectory.GlobDirectories("Onwrd.*Tests*");
 }

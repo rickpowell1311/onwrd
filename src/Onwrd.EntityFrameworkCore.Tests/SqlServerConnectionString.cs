@@ -1,4 +1,4 @@
-﻿namespace Onwrd.EntityFrameworkCore.Tests.Unit
+﻿namespace Onwrd.EntityFrameworkCore.Tests
 {
     internal static class SqlServerConnectionString
     {

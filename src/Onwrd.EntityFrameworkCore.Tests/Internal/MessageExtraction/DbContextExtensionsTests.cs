@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Onwrd.EntityFrameworkCore.Tests.Unit.Internal.MessageExtraction
+namespace Onwrd.EntityFrameworkCore.Tests.Internal.MessageExtraction
 {
     public class DbContextExtensionsTests
     {

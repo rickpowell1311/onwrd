@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Onwrd.EntityFrameworkCore.Internal;
 using Xunit;
 
-namespace Onwrd.EntityFrameworkCore.Tests.Unit.Internal
+namespace Onwrd.EntityFrameworkCore.Tests.Internal
 {
     public class StartupTests : IDisposable
     {

@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Onwrd.EntityFrameworkCore.Internal;
 using Xunit;
 
-namespace Onwrd.EntityFrameworkCore.Tests.Unit
+namespace Onwrd.EntityFrameworkCore.Tests
 {
     public class EndToEndTests : IDisposable
     {

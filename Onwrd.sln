@@ -5,12 +5,11 @@ VisualStudioVersion = 17.2.32616.157
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Onwrd.EntityFrameworkCore", "src\Onwrd.EntityFrameworkCore\Onwrd.EntityFrameworkCore.csproj", "{F5F14F3C-F967-4ECF-A13D-F12D48705C61}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Onwrd.EntityFrameworkCore.Tests.Unit", "src\Onwrd.EntityFrameworkCore.Tests.Unit\Onwrd.EntityFrameworkCore.Tests.Unit.csproj", "{8FA08605-31EF-4D12-91C2-A165B3EFDB2B}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{8D5F1E16-0CC0-4880-85D1-8087BBD1D4E6}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		LICENSE.md = LICENSE.md
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pipelines", "pipelines", "{25BDE9A8-E3BB-4044-85DA-CD22AC6A942A}"
@@ -18,7 +17,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pipelines", "pipelines", "{
 		pipelines\build.cmd = pipelines\build.cmd
 		pipelines\build.ps1 = pipelines\build.ps1
 		pipelines\build.sh = pipelines\build.sh
-		pipelines\docker-compose.yml = pipelines\docker-compose.yml
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Onwrd.Pipeline", "pipelines\build\Onwrd.Pipeline.csproj", "{F7BC4628-BD29-4710-AA97-09552E299DEC}"
@@ -28,7 +26,11 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{10BE5792-DFEA-4B82-8BE9-E895FBBE228E}"
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\ci.yml = .github\workflows\ci.yml
+		.github\workflows\pr.yml = .github\workflows\pr.yml
+		.github\workflows\release.yml = .github\workflows\release.yml
 	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Onwrd.EntityFrameworkCore.Tests", "src\Onwrd.EntityFrameworkCore.Tests\Onwrd.EntityFrameworkCore.Tests.csproj", "{D4939B04-2215-430A-8937-C0AB1D4DC892}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,24 +42,24 @@ Global
 		{F5F14F3C-F967-4ECF-A13D-F12D48705C61}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F5F14F3C-F967-4ECF-A13D-F12D48705C61}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F5F14F3C-F967-4ECF-A13D-F12D48705C61}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8FA08605-31EF-4D12-91C2-A165B3EFDB2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8FA08605-31EF-4D12-91C2-A165B3EFDB2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8FA08605-31EF-4D12-91C2-A165B3EFDB2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8FA08605-31EF-4D12-91C2-A165B3EFDB2B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F7BC4628-BD29-4710-AA97-09552E299DEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F7BC4628-BD29-4710-AA97-09552E299DEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F7BC4628-BD29-4710-AA97-09552E299DEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7BC4628-BD29-4710-AA97-09552E299DEC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4939B04-2215-430A-8937-C0AB1D4DC892}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4939B04-2215-430A-8937-C0AB1D4DC892}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4939B04-2215-430A-8937-C0AB1D4DC892}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4939B04-2215-430A-8937-C0AB1D4DC892}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{F5F14F3C-F967-4ECF-A13D-F12D48705C61} = {8D5F1E16-0CC0-4880-85D1-8087BBD1D4E6}
-		{8FA08605-31EF-4D12-91C2-A165B3EFDB2B} = {8D5F1E16-0CC0-4880-85D1-8087BBD1D4E6}
 		{F7BC4628-BD29-4710-AA97-09552E299DEC} = {25BDE9A8-E3BB-4044-85DA-CD22AC6A942A}
 		{32522A24-A8A3-4DB4-BF1B-F300237F20DB} = {25BDE9A8-E3BB-4044-85DA-CD22AC6A942A}
 		{10BE5792-DFEA-4B82-8BE9-E895FBBE228E} = {32522A24-A8A3-4DB4-BF1B-F300237F20DB}
+		{D4939B04-2215-430A-8937-C0AB1D4DC892} = {8D5F1E16-0CC0-4880-85D1-8087BBD1D4E6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D4D80BCA-4BE9-4882-93B9-ED405BCD142A}

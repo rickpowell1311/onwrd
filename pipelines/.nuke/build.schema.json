@@ -6,6 +6,10 @@
     "build": {
       "type": "object",
       "properties": {
+        "ArtifactDirectory": {
+          "type": "string",
+          "description": "Artifacts Directory"
+        },
         "Configuration": {
           "type": "string",
           "description": "Configuration to build - Default is 'Debug' (local) or 'Release' (server)",
@@ -43,17 +47,9 @@
             "VSCode"
           ]
         },
-        "IsRunningInContainer": {
-          "type": "boolean",
-          "description": "Is Running In Container"
-        },
         "NoLogo": {
           "type": "boolean",
           "description": "Disables displaying the NUKE logo"
-        },
-        "NuGetApiKey": {
-          "type": "string",
-          "description": "Nuget API Key"
         },
         "Partition": {
           "type": "string",
@@ -70,10 +66,6 @@
             "type": "string"
           }
         },
-        "PushPackage": {
-          "type": "boolean",
-          "description": "Push Package"
-        },
         "Root": {
           "type": "string",
           "description": "Root directory during build execution"
@@ -84,11 +76,9 @@
           "items": {
             "type": "string",
             "enum": [
-              "Clean",
               "Compile",
+              "GenerateArtifacts",
               "Initialize",
-              "Package",
-              "PublishPackage",
               "Test"
             ]
           }
@@ -99,11 +89,9 @@
           "items": {
             "type": "string",
             "enum": [
-              "Clean",
               "Compile",
+              "GenerateArtifacts",
               "Initialize",
-              "Package",
-              "PublishPackage",
               "Test"
             ]
           }

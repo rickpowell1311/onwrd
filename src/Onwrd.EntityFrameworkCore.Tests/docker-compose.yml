@@ -3,20 +3,16 @@
  services:
    tests:
      image: mcr.microsoft.com/dotnet/sdk:6.0
-     command: dotnet run
-     working_dir: /onwrd/pipelines/build
+     command: dotnet test
+     working_dir: /src/Onwrd.EntityFrameworkCore.Tests
      volumes:
-       - ../:/onwrd
+       - ../:/src
      depends_on:
        - db
      environment:
-        VERSION: ${ONWRD_VERSION}
-        NUGET_API_KEY: ${ONWRD_NUGETAPIKEY}
-        IS_RUNNING_IN_CONTAINER: true
         DATABASE_SERVER: db
         DATABASE_USER: sa
         DATABASE_PASSWORD: "Qx#)T@pzKgAV^+tw"
-        PUSH_PACKAGE: ${ONWRD_PUSHPACKAGE}
    db:
     image: "mcr.microsoft.com/mssql/server"
     environment:
