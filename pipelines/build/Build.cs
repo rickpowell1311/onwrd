@@ -51,7 +51,18 @@ class Build : NukeBuild
         .DependsOn(Initialize)
         .Executes(() =>
         {
-            foreach (var testProjectDirectory in TestProjectDirectories)
+            /* Ensure there are no clashes between the mounted volumnes used by the test 
+            * containers and the source directories by copying them before mounting and testing */
+            var containerTestingVolumeDir = RepositoryRoot / "container-testing-volume";
+
+            foreach (var projectDirectory in ProjectDirectories)
+            {
+                var targetDir = containerTestingVolumeDir / projectDirectory.Name;
+                EnsureCleanDirectory(targetDir);
+                CopyDirectoryRecursively(projectDirectory, targetDir, DirectoryExistsPolicy.Merge);
+            }
+
+            foreach (var testProjectDirectory in containerTestingVolumeDir.GlobDirectories(TestProjectDirectoryGlob))
             {
                 Docker("compose up --abort-on-container-exit", workingDirectory: testProjectDirectory);
             }
@@ -91,5 +102,7 @@ class Build : NukeBuild
     IEnumerable<AbsolutePath> PackagableProjectDirectories => ProjectDirectories
         .Where(x => !TestProjectDirectories.Contains(x));
 
-    IEnumerable<AbsolutePath> TestProjectDirectories => SourceDirectory.GlobDirectories("Onwrd.*Tests*");
+    IEnumerable<AbsolutePath> TestProjectDirectories => SourceDirectory.GlobDirectories(TestProjectDirectoryGlob);
+
+    string TestProjectDirectoryGlob => "Onwrd.*Tests*";
 }

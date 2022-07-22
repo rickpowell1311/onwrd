@@ -22,4 +22,6 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: my-artifact
-          path: path/to/artifact/ # or path/to/artifact
+          path: ./artficats # or path/to/artifact
+        env:
+          ARTIFACT_DIRECTORY: "./artifacts"
