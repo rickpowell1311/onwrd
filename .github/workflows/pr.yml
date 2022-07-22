@@ -1,3 +1,4 @@
+# Compiles the solution and tests it
 name: PR
 
 on:
@@ -13,10 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Run docker compose (with NUKE build)
-        working-directory: ./pipelines
-        run: docker compose up  --abort-on-container-exit
-        env:
-          ONWRD_VERSION: "0.1" # Doesn't matter for PR builds because no packages get pushed
-          ONWRD_NUGETAPIKEY: ${{ secrets.ONWRD_NUGETAPIKEY }}
-          ONWRD_PUSHPACKAGE: false
+      - name: Run NUKE build
+        working-directory: ./pipelines/build/build
+        run: dotnet run

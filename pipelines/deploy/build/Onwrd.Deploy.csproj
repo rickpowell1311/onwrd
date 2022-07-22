@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace></RootNamespace>
+    <NoWarn>CS0649;CS0169</NoWarn>
+    <NukeRootDirectory>..</NukeRootDirectory>
+    <NukeScriptDirectory>..</NukeScriptDirectory>
+    <NukeTelemetryVersion>1</NukeTelemetryVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nuke.Common" Version="6.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.nuke\temp\build.log" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.nuke\temp\build.2022-07-22_14-37-11.log" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.nuke\temp\build.2022-07-22_15-00-36.log" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.nuke\temp\build.2022-07-22_15-09-04.log" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.nuke\temp\build.2022-07-22_15-10-36.log" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.nuke\temp\build.2022-07-22_15-25-39.log" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.nuke\temp\build.2022-07-22_15-26-40.log" />
+  </ItemGroup>
+
+</Project>

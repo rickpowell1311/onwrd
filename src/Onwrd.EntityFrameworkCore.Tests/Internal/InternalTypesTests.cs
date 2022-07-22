@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace Onwrd.EntityFrameworkCore.Internal
+namespace Onwrd.EntityFrameworkCore.Tests.Internal
 {
     public class InternalTypesTests
     {

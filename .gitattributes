@@ -1,1 +1,1 @@
-pipelines/build.sh eol=lf
+**/build.sh eol=lf

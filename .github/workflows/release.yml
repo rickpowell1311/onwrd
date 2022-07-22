@@ -1,23 +1,36 @@
+# Downloads the latest CI artifact (from main) and pushes to NuGet
 name: Release
 
 on:
   workflow_dispatch:
     
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          approvers: rickpowell1311
-
+      
       - name: Evaluate build version
-        run: echo "ONWRD_VERSION=0.3.${{ github.run_number }}-beta" >> $GITHUB_ENV
+        run: echo "VERSION=0.3.${{ github.run_number }}-beta" >> $GITHUB_ENV
 
-      - name: Run docker compose (with NUKE build)
-        working-directory: ./pipelines
-        run: docker compose up  --abort-on-container-exit
+      - name: Run NUKE build
+        working-directory: ./pipelines/build/build
+        run: dotnet run
         env:
-          ONWRD_NUGETAPIKEY: ${{ secrets.ONWRD_NUGETAPIKEY }}
-          ONWRD_PUSHPACKAGE: true
+          ARTIFACT_DIRECTORY: "./artifacts"
+
+      - name: Run NUKE release (Push to NuGet)
+        working-directory: ./pipelines/deploy/build
+        run: dotnet run
+        env:
+          NuGetApiKey: ${{ secrets.ONWRD_NUGETAPIKEY }}
+          ArtifactDirectory: "./artifacts"
+          Version: ${{ github.VERSION }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: onwrd
+          path: "./artifacts"

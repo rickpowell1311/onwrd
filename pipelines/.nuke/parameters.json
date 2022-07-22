@@ -1,7 +1,0 @@
-{
-  "$schema": "./build.schema.json",
-  "Version": "0.1.0-dev",
-  "NuGetApiKey": "USE_ENVIRONMENT_VARIABLE",
-  "IsRunningInContainer": false,
-  "PushPackage":  false
-}

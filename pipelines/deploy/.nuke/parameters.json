@@ -1,0 +1,6 @@
+{
+  "$schema": "./build.schema.json",
+  "Version": "0.1.0-dev",
+  "ArtifactDirectory":  "./artifacts",
+  "NuGetApiKey": "SET_ME_IN_AN_ENVIRONMENT_VARIABLE!!!"
+}
