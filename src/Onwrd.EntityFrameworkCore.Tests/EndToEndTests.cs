@@ -70,6 +70,12 @@ namespace Onwrd.EntityFrameworkCore.Tests
             await ExecuteEndToEndTest();
         }
 
+        [Fact]
+        public void Temp()
+        {
+            throw new Exception("Oops");
+        }
+
         private async Task ExecuteEndToEndTest()
         {
             // Run migrations
