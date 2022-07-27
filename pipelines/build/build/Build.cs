@@ -25,6 +25,18 @@ class Build : NukeBuild
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode
 
+    public Build()
+    {
+        /* Docker outputs everything as standard error. Should convert to info will not show docker
+         * informational messages as errors. The Nuke docker process will still fail if any 
+         * exceptions occur whilst running a container */
+
+        DockerLogger = (o, s) =>
+        {
+            Serilog.Log.Information(s);
+        };
+    }
+
     public static int Main() => Execute<Build>(x => x.GenerateArtifacts);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
@@ -60,7 +72,7 @@ class Build : NukeBuild
 
             foreach (var testProjectDirectory in containerTestingVolumeDir.GlobDirectories(TestProjectDirectoryGlob))
             {
-                Docker("compose up --abort-on-container-exit", workingDirectory: testProjectDirectory);
+                Docker("compose up tests --force-recreate --abort-on-container-exit", workingDirectory: testProjectDirectory);
             }
         });
 
