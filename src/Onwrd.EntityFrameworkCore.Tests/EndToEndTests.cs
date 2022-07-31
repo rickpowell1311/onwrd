@@ -1,47 +1,61 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Configurations;
+using DotNet.Testcontainers.Containers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
-using Onwrd.EntityFrameworkCore.Internal;
 using Xunit;
 
 namespace Onwrd.EntityFrameworkCore.Tests
 {
-    public class EndToEndTests : IDisposable
+    public class SqlServerEndToEndTests : EndToEndTests
     {
-        private IServiceProvider serviceProvider;
-
-        public void Dispose()
+        public SqlServerEndToEndTests() : base(Database)
         {
-            if (this.serviceProvider != null)
+        }
+
+        private static TestcontainerDatabase Database => new TestcontainersBuilder<MsSqlTestcontainer>()
+            .WithDatabase(new MsSqlTestcontainerConfiguration
             {
-                var context = this.serviceProvider.GetRequiredService<TestContext>();
-                context.Database.EnsureDeleted();
-            }
-        }
+                Password = "Qx#)T@pzKgAV^+tw",
+            })
+            .Build();
 
-        [Fact]
-        public async Task SaveChanges_ForInMemoryConfiguration_DispatchesMessage()
+        protected override string ReplaceDatabaseInConnectionString(
+            string connectionString, 
+            string databaseName)
         {
-            var services = new ServiceCollection();
-            var databaseUniqueId = $"onward-{Guid.NewGuid()}";
-            services.AddOutboxedDbContext<TestContext>(
-                (_, builder) =>
-                {
-                    builder.UseInMemoryDatabase(databaseUniqueId);
-                },
-                outboxingConfig =>
-                {
-                    outboxingConfig.UseOnwardProcessor<TestOnwardProcessor>();
-                },
-                ServiceLifetime.Transient);
+            var databaseConnectionStringComponent = connectionString
+                    .Split(new[] { ';' })
+                    .SingleOrDefault(x => x.Contains("Database"));
 
-            services.AddSingleton<SentMessageAudit>();
+            var replacementDatabaseConnectionStringComponent =
+                $"Database={databaseName}";
 
-            this.serviceProvider = services.BuildServiceProvider();
-
-            await ExecuteEndToEndTest();
+            return connectionString
+                .Replace(databaseConnectionStringComponent, replacementDatabaseConnectionStringComponent);
         }
+    }
+
+    public abstract class EndToEndTests : IAsyncLifetime
+    {
+        private readonly TestcontainerDatabase testcontainerDatabase;
+
+        public EndToEndTests(TestcontainerDatabase database)
+        {
+            this.testcontainerDatabase = database;
+        }
+
+        public async Task InitializeAsync()
+        {
+            await this.testcontainerDatabase.StartAsync();
+        }
+
+        public async Task DisposeAsync()
+        {
+            await this.testcontainerDatabase.DisposeAsync();
+        }
+
 
         [Fact]
         public async Task SaveChanges_ForSqlServerConfiguration_DispatchesMessage()
@@ -52,7 +66,9 @@ namespace Onwrd.EntityFrameworkCore.Tests
                 (_, builder) =>
                 {
                     builder
-                        .UseSqlServer(SqlServerConnectionString.ForDatabase(databaseUniqueId));
+                        .UseSqlServer(ReplaceDatabaseInConnectionString(
+                            this.testcontainerDatabase.ConnectionString,
+                            databaseUniqueId));
                 },
                 outboxingConfig =>
                 {
@@ -65,15 +81,19 @@ namespace Onwrd.EntityFrameworkCore.Tests
 
             services.AddSingleton<SentMessageAudit>();
 
-            this.serviceProvider = services.BuildServiceProvider();
+            var serviceProvider = services.BuildServiceProvider();
 
-            await ExecuteEndToEndTest();
+            await ExecuteEndToEndTest(serviceProvider);
         }
 
-        private async Task ExecuteEndToEndTest()
+        protected abstract string ReplaceDatabaseInConnectionString(
+            string connectionString,
+            string databaseName);
+
+        private static async Task ExecuteEndToEndTest(IServiceProvider serviceProvider)
         {
             // Run migrations
-            var context = this.serviceProvider.GetService<TestContext>();
+            var context = serviceProvider.GetService<TestContext>();
             await context.Database.EnsureCreatedAsync();
 
             var testEntity = new TestEntity();
@@ -83,7 +103,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
 
             await context.SaveChangesAsync();
 
-            var sentMessageAudit = this.serviceProvider.GetService<SentMessageAudit>();
+            var sentMessageAudit = serviceProvider.GetService<SentMessageAudit>();
 
             Assert.Single(sentMessageAudit.SentMessages);
         }

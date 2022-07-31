@@ -1,40 +1,59 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Configurations;
+using DotNet.Testcontainers.Containers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Onwrd.EntityFrameworkCore.Internal;
 using Xunit;
 
 namespace Onwrd.EntityFrameworkCore.Tests.Internal
 {
-    public class StartupTests : IDisposable
+    public class SqlServerStartupTests : StartupTests
     {
-        private IServiceProvider serviceProvider;
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task Initialize_WhenUsingInMemoryDatabaseConfiguration_DoesNotThrow(bool isAsync)
+        public SqlServerStartupTests() : base(Database)
         {
-            var services = new ServiceCollection();
-            var databaseUniqueId = $"onward-{Guid.NewGuid()}";
-            services.AddOutboxedDbContext<TestContext>(
-                (_, builder) =>
-                {
-                    builder.UseInMemoryDatabase(databaseUniqueId);
-                },
-                outboxingConfig => { },
-                ServiceLifetime.Transient);
+        }
 
-            this.serviceProvider = services.BuildServiceProvider();
-            var startup = this.serviceProvider.GetService<Startup>();
+        private static TestcontainerDatabase Database => new TestcontainersBuilder<MsSqlTestcontainer>()
+            .WithDatabase(new MsSqlTestcontainerConfiguration
+            {
+                Password = "Qx#)T@pzKgAV^+tw",
+            })
+            .Build();
 
-            if (isAsync)
-            {
-                await startup.InitializeAsync();
-            }
-            else
-            {
-                startup.Initialize();
-            }
+        protected override string ReplaceDatabaseInConnectionString(
+            string connectionString,
+            string databaseName)
+        {
+            var databaseConnectionStringComponent = connectionString
+                    .Split(new[] { ';' })
+                    .SingleOrDefault(x => x.Contains("Database"));
+
+            var replacementDatabaseConnectionStringComponent =
+                $"Database={databaseName}";
+
+            return connectionString
+                .Replace(databaseConnectionStringComponent, replacementDatabaseConnectionStringComponent);
+        }
+    }
+
+    public abstract class StartupTests : IAsyncLifetime
+    {
+        private readonly TestcontainerDatabase testcontainerDatabase;
+
+        public StartupTests(TestcontainerDatabase database)
+        {
+            this.testcontainerDatabase = database;
+        }
+
+        public async Task InitializeAsync()
+        {
+            await this.testcontainerDatabase.StartAsync();
+        }
+
+        public async Task DisposeAsync()
+        {
+            await this.testcontainerDatabase.DisposeAsync();
         }
 
         [Theory]
@@ -48,13 +67,15 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
                 (_, builder) =>
                 {
                     builder
-                        .UseSqlServer(SqlServerConnectionString.ForDatabase(databaseUniqueId));
+                        .UseSqlServer(ReplaceDatabaseInConnectionString(
+                            this.testcontainerDatabase.ConnectionString,
+                            databaseUniqueId));
                 },
                 outboxingConfig => { },
                 ServiceLifetime.Transient);
 
-            this.serviceProvider = services.BuildServiceProvider();
-            var startup = this.serviceProvider.GetService<Startup>();
+            var serviceProvider = services.BuildServiceProvider();
+            var startup = serviceProvider.GetService<Startup>();
 
             if (isAsync)
             {
@@ -63,17 +84,12 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             else
             {
                 startup.Initialize();
-            }           
-        }
-
-        public void Dispose()
-        {
-            if (this.serviceProvider != null)
-            {
-                var context = this.serviceProvider.GetRequiredService<TestContext>();
-                context.Database.EnsureDeleted();
             }
         }
+
+        protected abstract string ReplaceDatabaseInConnectionString(
+            string connectionString,
+            string databaseName);
 
         internal class TestContext : DbContext
         {
