@@ -1,17 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Nuke.Common;
-using Nuke.Common.CI;
-using Nuke.Common.Execution;
 using Nuke.Common.IO;
-using Nuke.Common.ProjectModel;
-using Nuke.Common.Tooling;
-using Nuke.Common.Tools.DotNet;
-using Nuke.Common.Tools.Docker;
-using Nuke.Common.Utilities.Collections;
-using static Nuke.Common.EnvironmentInfo;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
@@ -55,29 +46,8 @@ class Build : NukeBuild
             Console.WriteLine($"{nameof(Configuration)}: {Configuration}");
         });
 
-    Target Test => _ => _
-        .DependsOn(Initialize)
-        .Executes(() =>
-        {
-            /* Ensure there are no clashes between the mounted volumnes used by the test 
-            * containers and the source directories by copying them before mounting and testing */
-            var containerTestingVolumeDir = RepositoryRoot / "container-testing-volume";
-
-            foreach (var projectDirectory in ProjectDirectories)
-            {
-                var targetDir = containerTestingVolumeDir / projectDirectory.Name;
-                EnsureCleanDirectory(targetDir);
-                CopyDirectoryRecursively(projectDirectory, targetDir, DirectoryExistsPolicy.Merge);
-            }
-
-            foreach (var testProjectDirectory in containerTestingVolumeDir.GlobDirectories(TestProjectDirectoryGlob))
-            {
-                Docker("compose up tests --force-recreate --abort-on-container-exit", workingDirectory: testProjectDirectory);
-            }
-        });
-
     Target Compile => _ => _
-        .DependsOn(Test)
+        .DependsOn(Initialize)
         .Executes(() =>
         {
             foreach (var packagableProjectDirectory in PackagableProjectDirectories)
@@ -86,8 +56,19 @@ class Build : NukeBuild
             }
         });
 
-    Target GenerateArtifacts => _ => _
+
+    Target Test => _ => _
         .DependsOn(Compile)
+        .Executes(() =>
+        {
+            foreach (var testProjectDirectory in TestProjectDirectories)
+            {
+                DotNet("test -c Debug", workingDirectory: testProjectDirectory);
+            }
+        });
+
+    Target GenerateArtifacts => _ => _
+        .DependsOn(Test)
         .Executes(() =>
         {
             var artifactsDirectory = RepositoryRoot / ArtifactDirectory;
@@ -101,16 +82,16 @@ class Build : NukeBuild
             }
         });
 
-    AbsolutePath RepositoryRoot => RootDirectory / "../..";
+    static AbsolutePath RepositoryRoot => RootDirectory / "../..";
 
-    AbsolutePath SourceDirectory => RootDirectory / "../../src";
+    static AbsolutePath SourceDirectory => RootDirectory / "../../src";
 
-    IEnumerable<AbsolutePath> ProjectDirectories => SourceDirectory.GlobDirectories("Onwrd.*");
+    static IEnumerable<AbsolutePath> ProjectDirectories => SourceDirectory.GlobDirectories("Onwrd.*");
 
-    IEnumerable<AbsolutePath> PackagableProjectDirectories => ProjectDirectories
+    static IEnumerable<AbsolutePath> PackagableProjectDirectories => ProjectDirectories
         .Where(x => !TestProjectDirectories.Contains(x));
 
-    IEnumerable<AbsolutePath> TestProjectDirectories => SourceDirectory.GlobDirectories(TestProjectDirectoryGlob);
+    static IEnumerable<AbsolutePath> TestProjectDirectories => SourceDirectory.GlobDirectories(TestProjectDirectoryGlob);
 
-    string TestProjectDirectoryGlob => "Onwrd.*Tests*";
+    static string TestProjectDirectoryGlob => "Onwrd.*Tests*";
 }
