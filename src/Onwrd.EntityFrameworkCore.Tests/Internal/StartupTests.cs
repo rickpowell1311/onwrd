@@ -1,6 +1,4 @@
-﻿using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
-using DotNet.Testcontainers.Containers;
+﻿using DotNet.Testcontainers.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Onwrd.EntityFrameworkCore.Internal;
@@ -8,68 +6,37 @@ using Xunit;
 
 namespace Onwrd.EntityFrameworkCore.Tests.Internal
 {
-    public class SqlServerStartupTests : StartupTests
+    public class StartupTests : IAsyncLifetime
     {
-        public SqlServerStartupTests() : base(Database)
+        private TestcontainerDatabase database;
+
+        public Task InitializeAsync()
         {
-        }
-
-        private static TestcontainerDatabase Database => new TestcontainersBuilder<MsSqlTestcontainer>()
-            .WithDatabase(new MsSqlTestcontainerConfiguration
-            {
-                Password = "Qx#)T@pzKgAV^+tw",
-            })
-            .Build();
-
-        protected override string ReplaceDatabaseInConnectionString(
-            string connectionString,
-            string databaseName)
-        {
-            var databaseConnectionStringComponent = connectionString
-                    .Split(new[] { ';' })
-                    .SingleOrDefault(x => x.Contains("Database"));
-
-            var replacementDatabaseConnectionStringComponent =
-                $"Database={databaseName}";
-
-            return connectionString
-                .Replace(databaseConnectionStringComponent, replacementDatabaseConnectionStringComponent);
-        }
-    }
-
-    public abstract class StartupTests : IAsyncLifetime
-    {
-        private readonly TestcontainerDatabase testcontainerDatabase;
-
-        public StartupTests(TestcontainerDatabase database)
-        {
-            this.testcontainerDatabase = database;
-        }
-
-        public async Task InitializeAsync()
-        {
-            await this.testcontainerDatabase.StartAsync();
+            // Initialization will be done in the tests
+            return Task.CompletedTask;
         }
 
         public async Task DisposeAsync()
         {
-            await this.testcontainerDatabase.DisposeAsync();
+            if (database != null)
+            {
+                await this.database.DisposeAsync();
+            }
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task Initialize_WhenUsingSqlServerDatabaseConfiguration_DoesNotThrow(bool isAsync)
+        [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
+        public async Task InitializeAsync_WhenUsingSupportedDatabaseConfiguration_DoesNotThrow(ISupportedDatabase supportedDatabase)
         {
+            this.database = supportedDatabase.TestcontainerDatabase;
+            await this.database.StartAsync();
+
             var services = new ServiceCollection();
             var databaseUniqueId = $"onward-{Guid.NewGuid()}";
             services.AddOutboxedDbContext<TestContext>(
                 (_, builder) =>
                 {
-                    builder
-                        .UseSqlServer(ReplaceDatabaseInConnectionString(
-                            this.testcontainerDatabase.ConnectionString,
-                            databaseUniqueId));
+                    supportedDatabase.Configure(builder);
                 },
                 outboxingConfig => { },
                 ServiceLifetime.Transient);
@@ -77,19 +44,31 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             var serviceProvider = services.BuildServiceProvider();
             var startup = serviceProvider.GetService<Startup>();
 
-            if (isAsync)
-            {
-                await startup.InitializeAsync();
-            }
-            else
-            {
-                startup.Initialize();
-            }
+            await startup.InitializeAsync();
         }
 
-        protected abstract string ReplaceDatabaseInConnectionString(
-            string connectionString,
-            string databaseName);
+        [Theory]
+        [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
+        public async Task Initialize_WhenUsingSupportedDatabaseConfiguration_DoesNotThrow(ISupportedDatabase supportedDatabase)
+        {
+            this.database = supportedDatabase.TestcontainerDatabase;
+            await this.database.StartAsync();
+
+            var services = new ServiceCollection();
+            var databaseUniqueId = $"onward-{Guid.NewGuid()}";
+            services.AddOutboxedDbContext<TestContext>(
+                (_, builder) =>
+                {
+                    supportedDatabase.Configure(builder);
+                },
+                outboxingConfig => { },
+                ServiceLifetime.Transient);
+
+            var serviceProvider = services.BuildServiceProvider();
+            var startup = serviceProvider.GetService<Startup>();
+
+            startup.Initialize();
+        }
 
         internal class TestContext : DbContext
         {
