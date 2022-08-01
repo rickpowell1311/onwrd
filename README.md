@@ -99,6 +99,7 @@ public class MakePurchase
 Currently Onwrd supports the following DB providers:
 - In-Memory 
 - SQL Server
+- PostgreSQL
 
 Support is currently limited by the migration mechanism for maintaining the Onwrd schema. Other DB Providers may work out of the box, however they are not officially tested or supported at the moment.
 
@@ -127,7 +128,10 @@ Onwrd is built and maintained under an MIT license and always will be.
 # Short term roadmap
 
 - Support for more DB providers
+- Support for DB provider specific migrations
+- Support for retry mechanisms
+- Support inbox pattern (change current implementation to be agnostic of outboxing)
+- Add examples
 - Support for integrating with logging providers (prioritising Serilog)
 - Support for batched message onward processing
-- Support for retry mechanisms
 - Support for generic `IOnwardProcessor<T>` for filtered processing of message types
