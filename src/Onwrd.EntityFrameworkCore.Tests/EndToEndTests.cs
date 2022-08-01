@@ -1,6 +1,4 @@
-﻿using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
-using DotNet.Testcontainers.Containers;
+﻿using DotNet.Testcontainers.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,67 +6,37 @@ using Xunit;
 
 namespace Onwrd.EntityFrameworkCore.Tests
 {
-    public class SqlServerEndToEndTests : EndToEndTests
+    public class EndToEndTests : IAsyncLifetime
     {
-        public SqlServerEndToEndTests() : base(Database)
+        private TestcontainerDatabase database;
+
+        public Task InitializeAsync()
         {
-        }
-
-        private static TestcontainerDatabase Database => new TestcontainersBuilder<MsSqlTestcontainer>()
-            .WithDatabase(new MsSqlTestcontainerConfiguration
-            {
-                Password = "Qx#)T@pzKgAV^+tw",
-            })
-            .Build();
-
-        protected override string ReplaceDatabaseInConnectionString(
-            string connectionString, 
-            string databaseName)
-        {
-            var databaseConnectionStringComponent = connectionString
-                    .Split(new[] { ';' })
-                    .SingleOrDefault(x => x.Contains("Database"));
-
-            var replacementDatabaseConnectionStringComponent =
-                $"Database={databaseName}";
-
-            return connectionString
-                .Replace(databaseConnectionStringComponent, replacementDatabaseConnectionStringComponent);
-        }
-    }
-
-    public abstract class EndToEndTests : IAsyncLifetime
-    {
-        private readonly TestcontainerDatabase testcontainerDatabase;
-
-        public EndToEndTests(TestcontainerDatabase database)
-        {
-            this.testcontainerDatabase = database;
-        }
-
-        public async Task InitializeAsync()
-        {
-            await this.testcontainerDatabase.StartAsync();
+            // Initialization will be done in the tests
+            return Task.CompletedTask;
         }
 
         public async Task DisposeAsync()
         {
-            await this.testcontainerDatabase.DisposeAsync();
+            if (database != null)
+            {
+                await this.database.DisposeAsync();
+            }
         }
 
-
-        [Fact]
-        public async Task SaveChanges_ForSqlServerConfiguration_DispatchesMessage()
+        [Theory]
+        [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
+        public async Task SaveChanges_ForSupportedDatabase_DispatchesMessage(ISupportedDatabase supportedDatabase)
         {
+            this.database = supportedDatabase.TestcontainerDatabase;
+            await this.database.StartAsync();
+
             var services = new ServiceCollection();
             var databaseUniqueId = $"onward-{Guid.NewGuid()}";
             services.AddOutboxedDbContext<TestContext>(
                 (_, builder) =>
                 {
-                    builder
-                        .UseSqlServer(ReplaceDatabaseInConnectionString(
-                            this.testcontainerDatabase.ConnectionString,
-                            databaseUniqueId));
+                    supportedDatabase.Configure(builder);
                 },
                 outboxingConfig =>
                 {
@@ -85,10 +53,6 @@ namespace Onwrd.EntityFrameworkCore.Tests
 
             await ExecuteEndToEndTest(serviceProvider);
         }
-
-        protected abstract string ReplaceDatabaseInConnectionString(
-            string connectionString,
-            string databaseName);
 
         private static async Task ExecuteEndToEndTest(IServiceProvider serviceProvider)
         {
