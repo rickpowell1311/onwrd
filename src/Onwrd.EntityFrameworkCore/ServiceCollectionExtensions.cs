@@ -6,7 +6,7 @@ using Onwrd.EntityFrameworkCore.Internal.Migrations;
 
 namespace Onwrd.EntityFrameworkCore
 {
-    internal static class ServiceCollectionExtensions
+    public static class ServiceCollectionExtensions
     {
         public static IServiceCollection AddOutboxedDbContext<TContext>(
             this IServiceCollection serviceCollection,
