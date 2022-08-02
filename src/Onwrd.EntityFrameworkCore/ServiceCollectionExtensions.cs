@@ -1,10 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Onwrd.EntityFrameworkCore.Internal;
 using Onwrd.EntityFrameworkCore.Internal.Migrations;
-using System.Reflection;
 
 namespace Onwrd.EntityFrameworkCore
 {
@@ -53,7 +51,6 @@ namespace Onwrd.EntityFrameworkCore
             {
                 optionsAction(serviceProvider, builder);
                 builder.AddOutboxing();
-                builder.ReplaceService<IMigrationsAssembly, OnwrdMigrationsAssembly>();
                 builder.ReplaceService<IMigrator, OnwrdMigrator>();
             }
 
@@ -61,8 +58,6 @@ namespace Onwrd.EntityFrameworkCore
                 migrationOptionsActionOverride,
                 ServiceLifetime.Transient,
                 ServiceLifetime.Transient);
-
-            serviceCollection.AddTransient<IOnwrdMigration, Create>();
 
             return serviceCollection;
         }

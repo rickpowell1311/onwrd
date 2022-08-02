@@ -127,8 +127,6 @@ Onwrd is built and maintained under an MIT license and always will be.
 
 # Short term roadmap
 
-- Support for more DB providers
-- Support for DB provider specific migrations
 - Support for retry mechanisms
 - Support inbox pattern (change current implementation to be agnostic of outboxing)
 - Add examples
