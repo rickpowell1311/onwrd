@@ -2,13 +2,13 @@
 
 namespace Onwrd.EntityFrameworkCore
 {
-    public class OutboxingConfiguration
+    public class OnwrdConfiguration
     {
         internal Type OnwardProcessorType { get; private set; }
 
         public bool RunMigrations { get; set; } = true;
 
-        internal OutboxingConfiguration()
+        internal OnwrdConfiguration()
         {
             OnwardProcessorType = typeof(NoOpOnwardProcessor);
         }

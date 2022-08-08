@@ -33,12 +33,12 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
 
             var services = new ServiceCollection();
             var databaseUniqueId = $"onward-{Guid.NewGuid()}";
-            services.AddOutboxedDbContext<TestContext>(
+            services.AddDbContext<TestContext>(
                 (_, builder) =>
                 {
                     supportedDatabase.Configure(builder);
                 },
-                outboxingConfig => { },
+                onwrdConfig => { },
                 ServiceLifetime.Transient);
 
             var serviceProvider = services.BuildServiceProvider();
@@ -56,12 +56,12 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
 
             var services = new ServiceCollection();
             var databaseUniqueId = $"onward-{Guid.NewGuid()}";
-            services.AddOutboxedDbContext<TestContext>(
+            services.AddDbContext<TestContext>(
                 (_, builder) =>
                 {
                     supportedDatabase.Configure(builder);
                 },
-                outboxingConfig => { },
+                onwrdConfig => { },
                 ServiceLifetime.Transient);
 
             var serviceProvider = services.BuildServiceProvider();

@@ -8,17 +8,17 @@ namespace Onwrd.EntityFrameworkCore
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddOutboxedDbContext<TContext>(
+        public static IServiceCollection AddDbContext<TContext>(
             this IServiceCollection serviceCollection,
             Action<IServiceProvider, DbContextOptionsBuilder> optionsAction,
-            Action<OutboxingConfiguration> outboxingConfiguration,
+            Action<OnwrdConfiguration> onwrdConfiguration,
             ServiceLifetime contextLifetime = ServiceLifetime.Scoped,
             ServiceLifetime optionsLifetime = ServiceLifetime.Scoped)
             where TContext : DbContext
         {
             // Core onwrd services
-            var config = new OutboxingConfiguration();
-            outboxingConfiguration(config);
+            var config = new OnwrdConfiguration();
+            onwrdConfiguration(config);
 
             serviceCollection.AddSingleton(config);
 
@@ -35,7 +35,7 @@ namespace Onwrd.EntityFrameworkCore
             void optionsActionOverride(IServiceProvider serviceProvider, DbContextOptionsBuilder builder)
             {
                 optionsAction(serviceProvider, builder);
-                builder.AddOutboxing();
+                builder.AddOnwrdModel();
                 builder.AddInterceptors(
                     serviceProvider.GetRequiredService<SaveChangesInterceptor>(),
                     serviceProvider.GetRequiredService<OnConnectingInterceptor>());
@@ -50,7 +50,7 @@ namespace Onwrd.EntityFrameworkCore
             void migrationOptionsActionOverride(IServiceProvider serviceProvider, DbContextOptionsBuilder builder)
             {
                 optionsAction(serviceProvider, builder);
-                builder.AddOutboxing();
+                builder.AddOnwrdModel();
                 builder.ReplaceService<IMigrator, OnwrdMigrator>();
             }
 

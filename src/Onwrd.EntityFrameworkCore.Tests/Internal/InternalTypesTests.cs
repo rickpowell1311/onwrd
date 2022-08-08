@@ -7,7 +7,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         [Fact]
         public void ImplementationNamespace_TypesInImplementationNamespace_AreInternal()
         {
-            var publicTypesInImplementationNamespace = typeof(OutboxMessage).Assembly.GetTypes()
+            var publicTypesInImplementationNamespace = typeof(Event).Assembly.GetTypes()
                 .Where(x => !string.IsNullOrWhiteSpace(x.Namespace) 
                     && x.Namespace.Contains("Onwrd.EntityFrameworkCore.Internal")
                     && x.IsVisible);

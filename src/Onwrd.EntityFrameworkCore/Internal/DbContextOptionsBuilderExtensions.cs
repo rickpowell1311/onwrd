@@ -6,9 +6,13 @@ namespace Onwrd.EntityFrameworkCore.Internal
 {
     internal static class DbContextOptionsBuilderExtensions
     {
-        internal static void AddOutboxing(this DbContextOptionsBuilder dbContextOptionsBuilder)
+        /// <summary>
+        /// Extends the client db context model with the Onwrd model configuration.
+        /// </summary>
+        /// <param name="dbContextOptionsBuilder"></param>
+        internal static void AddOnwrdModel(this DbContextOptionsBuilder dbContextOptionsBuilder)
         {
-            dbContextOptionsBuilder.ReplaceService<IModelCustomizer, OutboxingModelCustomizer>();
+            dbContextOptionsBuilder.ReplaceService<IModelCustomizer, OnwrdModelCustomizer>();
         }
     }
 }

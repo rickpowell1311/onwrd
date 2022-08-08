@@ -2,21 +2,21 @@
 {
     internal static class OnwardProcessorExtensions
     {
-        internal static async Task ProcessMessage(
+        internal static async Task ProcessEvent(
             this IOnwardProcessor onwardProcessor, 
-            (OutboxMessage OutboxMessage, object Message) messagePair)
+            (Event Event, object Contents) eventPair)
         {
             var method = typeof(IOnwardProcessor).GetMethod("Process");
 
             var invocation = method
-                .MakeGenericMethod(messagePair.Message.GetType())
+                .MakeGenericMethod(eventPair.Contents.GetType())
                 .Invoke(onwardProcessor, new object[]
                 {
-                    messagePair.Message,
-                    new MessageMetadata
+                    eventPair.Contents,
+                    new EventMetadata
                     {
-                        Id = messagePair.OutboxMessage.Id,
-                        CreatedOn = messagePair.OutboxMessage.CreatedOn
+                        Id = eventPair.Event.Id,
+                        CreatedOn = eventPair.Event.CreatedOn
                     }
                 }) as Task;
 

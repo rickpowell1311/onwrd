@@ -1,6 +1,6 @@
 ﻿namespace Onwrd.EntityFrameworkCore
 {
-    public class MessageMetadata
+    public class EventMetadata
     {
         public Guid Id { get; set; }
 

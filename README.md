@@ -14,19 +14,19 @@ Many .NET developers adopt [Entity Framework Core](https://docs.microsoft.com/en
 
 # Quick start
 
-Configure the DbContext to use outboxing:
+Configure the DbContext to use onwrd by using the following overloaded method:
 
 ```
-services.AddOutboxedDbContext<MyContext>(
+services.AddDbContext<MyContext>(
     (serviceProvider, builder) =>
     {
         // Your context configuration here...
         builder.UseSqlServer($"Server=.;Database=mydatabase;Trusted_Connection=True;");
     },
-    outboxingConfig => 
+    onwrdConfig => 
     {
         // Outboxing configuration here
-        outboxingConfig.UseOnwardProcessor<MyOnwardProcessor>();
+        onwrdConfig.UseOnwardProcessor<MyOnwardProcessor>();
     });
 ```
 
@@ -41,9 +41,9 @@ public class PurchaseMade
 }
 ```
 
-... then raise the event from your domain, using the `Outboxed` base class:
+... then raise the event from your domain, using the `EventRaiser` base class:
 ``` 
-public class Purchase : Outboxed
+public class Purchase : EventRaiser
 {
     public decimal Cost { get; private set; }
 
@@ -51,7 +51,7 @@ public class Purchase : Outboxed
     {
         Cost = cost;
 
-        AddToOutbox(new ItemPurchased { Cost = cost })
+        RaiseEvent(new ItemPurchased { Cost = cost })
     }
 }
 ```
@@ -67,14 +67,14 @@ public class BusOnwardProcessor : IOnwardProcessor
         _bus = bus;
     }    
 
-    public async Task Process<T>(T message, MessageMetadata messageMetadata)
+    public async Task Process<T>(T @event, EventMetadata eventMetadata)
     {
-        await _bus.SendAsync(message);
+        await _bus.SendAsync(@event);
     }
 }
 ```
 
-When you call `SaveChangesAsync()` after an entity has added a message to the outbox, the IOnwardProcessor will be invoked.
+When you call `SaveChangesAsync()` after an entity has raised an event, the IOnwardProcessor will be invoked.
 ```
 public class MakePurchase
 {
@@ -114,7 +114,7 @@ CAP is a great framework which implements the outboxing pattern, and natively in
 
 ## [MassTransit](https://masstransit-project.com/)
 
-MassTransit is yet another great library for managing onward processing of messages on to an event bus. It is feature-rich, meaning it is powerful but also comes with a steep learning curve. MassTransit does not implement a persistent outbox yet, so Onwrd can be seen as a complimentary framework if there was a desire to use both Onwrd and MassTransit together.
+MassTransit is yet another great library for managing onward processing of events on to an message bus. It is feature-rich, meaning it is powerful but also comes with a steep learning curve. MassTransit does not implement a persistent outbox yet, so Onwrd can be seen as a complimentary framework if there was a desire to use both Onwrd and MassTransit together.
 
 ## [NServiceBus](https://docs.particular.net/nservicebus/)
 
@@ -131,5 +131,5 @@ Onwrd is built and maintained under an MIT license and always will be.
 - Support inbox pattern (change current implementation to be agnostic of outboxing)
 - Add examples
 - Support for integrating with logging providers (prioritising Serilog)
-- Support for batched message onward processing
-- Support for generic `IOnwardProcessor<T>` for filtered processing of message types
+- Support for batched event onward processing
+- Support for generic `IOnwardProcessor<T>` for filtered processing of event types

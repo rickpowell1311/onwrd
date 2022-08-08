@@ -5,19 +5,19 @@ namespace Onwrd.EntityFrameworkCore.Internal
 {
     internal class Startup
     {
-        private readonly OutboxingConfiguration outboxingConfiguration;
+        private readonly OnwrdConfiguration onwrdConfiguration;
         private readonly MigrationContext migrationContext;
 
-        public Startup(OutboxingConfiguration outboxingConfiguration, MigrationContext migrationContext)
+        public Startup(OnwrdConfiguration onwrdConfiguration, MigrationContext migrationContext)
         {
-            this.outboxingConfiguration = outboxingConfiguration;
+            this.onwrdConfiguration = onwrdConfiguration;
             this.migrationContext = migrationContext;
         }
 
         internal async Task InitializeAsync()
         {
             // Migrations
-            if (this.outboxingConfiguration.RunMigrations && this.migrationContext.Database.IsRelational())
+            if (this.onwrdConfiguration.RunMigrations && this.migrationContext.Database.IsRelational())
             {
                 await migrationContext.Database.MigrateAsync();
             }
@@ -26,7 +26,7 @@ namespace Onwrd.EntityFrameworkCore.Internal
         internal void Initialize()
         {
             // Migrations
-            if (this.outboxingConfiguration.RunMigrations && this.migrationContext.Database.IsRelational())
+            if (this.onwrdConfiguration.RunMigrations && this.migrationContext.Database.IsRelational())
             {
                 migrationContext.Database.Migrate();
             }

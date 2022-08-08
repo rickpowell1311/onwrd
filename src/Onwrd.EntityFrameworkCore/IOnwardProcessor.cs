@@ -2,6 +2,6 @@
 {
     public interface IOnwardProcessor
     {
-        Task Process<T>(T message, MessageMetadata messageMetadata);
+        Task Process<T>(T @event, EventMetadata eventMetadata);
     }
 }

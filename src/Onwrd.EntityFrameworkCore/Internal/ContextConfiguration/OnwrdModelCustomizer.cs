@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Onwrd.EntityFrameworkCore.Internal.ContextConfiguration
 {
-    internal class OutboxingModelCustomizer : ModelCustomizer
+    internal class OnwrdModelCustomizer : ModelCustomizer
     {
-        public OutboxingModelCustomizer(ModelCustomizerDependencies dependencies) : base(dependencies)
+        public OnwrdModelCustomizer(ModelCustomizerDependencies dependencies) : base(dependencies)
         {
         }
 
@@ -13,7 +13,7 @@ namespace Onwrd.EntityFrameworkCore.Internal.ContextConfiguration
         {
             base.Customize(modelBuilder, context);
 
-            modelBuilder.AddOutboxingModel();
+            modelBuilder.AddOnwrdModel();
         }
     }
 }

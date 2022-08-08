@@ -16,76 +16,76 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public async Task SaveChangesAsync_WhenMessageInOutboxedEntity_AddsMessageToOutbox()
+        public async Task SaveChangesAsync_WhenEventRaised_AddsEventToEvents()
         {
             var entity = new TestEntity();
-            entity.AddMessageToOutbox();
+            entity.RaiseEvent();
 
             this.testContext.TestEntities.Add(entity);
 
             await SaveChangesWrapper().SaveChangesAsync();
 
-            var outboxMessages = await this.testContext.Set<OutboxMessage>().ToListAsync();
+            var events = await this.testContext.Set<Event>().ToListAsync();
 
-            Assert.Single(outboxMessages);
+            Assert.Single(events);
         }
 
         [Fact]
-        public async Task SaveChangesAsync_WhenMessageInOutboxedEntityAndOnwardProcessorConfigured_ProcessesMessage()
+        public async Task SaveChangesAsync_WhenEventRaisedAndOnwardProcessorConfigured_ProcessesEvent()
         {
             var entity = new TestEntity();
-            entity.AddMessageToOutbox();
+            entity.RaiseEvent();
 
             this.testContext.TestEntities.Add(entity);
 
             await SaveChangesWrapper().SaveChangesAsync();
 
-            Assert.Single(this.onwardProcessor.Sent);
+            Assert.Single(this.onwardProcessor.Processed);
         }
 
         [Fact]
-        public async Task SaveChangesAsync_WhenMessageInOutboxedEntityAndOnwardProcessingSuccessful_MarksMessageAsDispatched()
+        public async Task SaveChangesAsync_WhenOnwardProcessingOfEventIsSuccessful_MarksEventAsDispatched()
         {
             var entity = new TestEntity();
-            entity.AddMessageToOutbox();
+            entity.RaiseEvent();
 
             this.testContext.TestEntities.Add(entity);
 
             await SaveChangesWrapper().SaveChangesAsync();
 
-            var outboxMessage = await this.testContext.Set<OutboxMessage>().SingleAsync();
+            var @event = await this.testContext.Set<Event>().SingleAsync();
 
-            Assert.True(outboxMessage.DispatchedOn.HasValue);
+            Assert.True(@event.DispatchedOn.HasValue);
         }
 
         [Fact]
-        public async Task SaveChangesAsync_WhenMessageInOutboxedEntityAndOnwardProcessingFails_MessageIsNotDispatched()
+        public async Task SaveChangesAsync_WhenRaisedEventOnwardProcessingFails_EventIsNotDispatched()
         {
             var entity = new TestEntity();
-            entity.AddMessageToOutbox();
+            entity.RaiseEvent();
 
             this.testContext.TestEntities.Add(entity);
             this.onwardProcessor.ShouldThrow = true;
 
             await SaveChangesWrapper().SaveChangesAsync();
 
-            var outboxMessage = await this.testContext.Set<OutboxMessage>().SingleAsync();
+            var @event = await this.testContext.Set<Event>().SingleAsync();
 
-            Assert.False(outboxMessage.DispatchedOn.HasValue);
+            Assert.False(@event.DispatchedOn.HasValue);
         }
 
         [Fact]
-        public async Task SaveChangesAsync_WhenTwoMessagesInOutboxedEntity_AddsMessagesToOutbox()
+        public async Task SaveChangesAsync_WhenTwoEventsRaisedByEntity_ProcessesEvents()
         {
             var entity = new TestEntity();
-            entity.AddMessageToOutbox();
-            entity.AddMessageToOutbox();
+            entity.RaiseEvent();
+            entity.RaiseEvent();
 
             this.testContext.TestEntities.Add(entity);
 
             await SaveChangesWrapper().SaveChangesAsync();
 
-            Assert.Equal(2, this.onwardProcessor.Sent.Count());
+            Assert.Equal(2, this.onwardProcessor.Processed.Count());
         }
 
         private SaveChangesWrapper SaveChangesWrapper()
@@ -110,7 +110,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
                 {
                     var optionsBuilder = new DbContextOptionsBuilder<TestContext>();
                     optionsBuilder.UseInMemoryDatabase(Guid.NewGuid().ToString());
-                    optionsBuilder.AddOutboxing();
+                    optionsBuilder.AddOnwrdModel();
 
                     return optionsBuilder.Options;
                 }
@@ -122,7 +122,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             }
         }
 
-        internal class TestEntity : Outboxed
+        internal class TestEntity : EventRaiser
         {
             public Guid Id { get; set; }
 
@@ -131,22 +131,22 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
                 Id = Guid.NewGuid();
             }
 
-            public void AddMessageToOutbox()
+            public void RaiseEvent()
             {
-                AddToOutbox(new TestMessage("TestEntity"));
+                RaiseEvent(new TestEvent("TestEntity"));
             }
         }
 
 
-        internal class TestMessage
+        internal class TestEvent
         {
             public string Greeting { get; set; }
 
-            public TestMessage()
+            public TestEvent()
             {
             }
 
-            public TestMessage(string sender)
+            public TestEvent(string sender)
             {
                 Greeting = $"Hello from {sender}";
             }
@@ -156,23 +156,23 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         {
             public bool ShouldThrow { get; set; }
 
-            private readonly List<(object Message, MessageMetadata Metadata)> _sent;
+            private readonly List<(object Event, EventMetadata Metadata)> _processed;
 
-            public IEnumerable<(object Message, MessageMetadata Metadata)> Sent => _sent;
+            public IEnumerable<(object Event, EventMetadata Metadata)> Processed => _processed;
 
             public TestOnwardProcessor()
             {
-                _sent = new List<(object Message, MessageMetadata Metadata)>();
+                _processed = new List<(object Event, EventMetadata Metadata)>();
             }
 
-            public Task Process<T>(T message, MessageMetadata messageMetadata)
+            public Task Process<T>(T @event, EventMetadata eventMetadata)
             {
                 if (ShouldThrow)
                 {
-                    throw new Exception("Couldn't process the message :(");
+                    throw new Exception("Couldn't process the event :(");
                 }
 
-                _sent.Add((message, messageMetadata));
+                _processed.Add((@event, eventMetadata));
 
                 return Task.CompletedTask;
             }

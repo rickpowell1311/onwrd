@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Onwrd.EntityFrameworkCore.Internal.MessageExtraction;
+using Onwrd.EntityFrameworkCore.Internal.EventExtraction;
 
 namespace Onwrd.EntityFrameworkCore.Internal
 {
@@ -21,8 +21,8 @@ namespace Onwrd.EntityFrameworkCore.Internal
 
         public async Task SaveChangesAsync()
         {
-            var messages = this.context.ExtractMessages();
-            var additions = this.context.AddToOutbox(messages);
+            var events = this.context.ExtractEvents();
+            var additions = this.context.AddToEvents(events);
 
             await saveChangesCallback();
 
@@ -33,8 +33,8 @@ namespace Onwrd.EntityFrameworkCore.Internal
                 {
                     try
                     {
-                        await onwardProcessor.ProcessMessage(addition);
-                        addition.OutboxMessage.DispatchedOn = DateTime.UtcNow;
+                        await onwardProcessor.ProcessEvent(addition);
+                        addition.Event.DispatchedOn = DateTime.UtcNow;
 
                         await context.SaveChangesAsync();
                     }
