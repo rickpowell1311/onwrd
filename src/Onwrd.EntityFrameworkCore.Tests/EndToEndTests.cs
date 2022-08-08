@@ -26,28 +26,28 @@ namespace Onwrd.EntityFrameworkCore.Tests
 
         [Theory]
         [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
-        public async Task SaveChanges_ForSupportedDatabase_DispatchesMessage(ISupportedDatabase supportedDatabase)
+        public async Task SaveChanges_ForSupportedDatabase_ProcessesEvent(ISupportedDatabase supportedDatabase)
         {
             this.database = supportedDatabase.TestcontainerDatabase;
             await this.database.StartAsync();
 
             var services = new ServiceCollection();
             var databaseUniqueId = $"onward-{Guid.NewGuid()}";
-            services.AddOutboxedDbContext<TestContext>(
+            services.AddDbContext<TestContext>(
                 (_, builder) =>
                 {
                     supportedDatabase.Configure(builder);
                 },
-                outboxingConfig =>
+                onwrdConfig =>
                 {
-                    outboxingConfig.UseOnwardProcessor<TestOnwardProcessor>();
+                    onwrdConfig.UseOnwardProcessor<TestOnwardProcessor>();
                     /* Because we have a unique database for each test, we can just let this context
                        control the creation of the schema */
-                    outboxingConfig.RunMigrations = false;
+                    onwrdConfig.RunMigrations = false;
                 },
                 ServiceLifetime.Transient);
 
-            services.AddSingleton<SentMessageAudit>();
+            services.AddSingleton<ProcessedEventAudit>();
 
             var serviceProvider = services.BuildServiceProvider();
 
@@ -61,15 +61,15 @@ namespace Onwrd.EntityFrameworkCore.Tests
             await context.Database.EnsureCreatedAsync();
 
             var testEntity = new TestEntity();
-            testEntity.AddMessageToOutbox();
+            testEntity.RaiseEvent();
 
             context.TestEntities.Add(testEntity);
 
             await context.SaveChangesAsync();
 
-            var sentMessageAudit = serviceProvider.GetService<SentMessageAudit>();
+            var processedEventAudit = serviceProvider.GetService<ProcessedEventAudit>();
 
-            Assert.Single(sentMessageAudit.SentMessages);
+            Assert.Single(processedEventAudit.ProcessedEvents);
         }
 
         internal class TestContext : DbContext
@@ -96,7 +96,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
             }
         }
 
-        internal class TestEntity : Outboxed
+        internal class TestEntity : EventRaiser
         {
             public Guid Id { get; set; }
 
@@ -105,21 +105,21 @@ namespace Onwrd.EntityFrameworkCore.Tests
                 Id = Guid.NewGuid();
             }
 
-            public void AddMessageToOutbox()
+            public void RaiseEvent()
             {
-                AddToOutbox(new TestMessage("TestEntity"));
+                RaiseEvent(new TestEvent("TestEntity"));
             }
         }
 
-        internal class TestMessage
+        internal class TestEvent
         {
             public string Greeting { get; set; }
 
-            public TestMessage()
+            public TestEvent()
             {
             }
 
-            public TestMessage(string sender)
+            public TestEvent(string sender)
             {
                 Greeting = $"Hello from {sender}";
             }
@@ -127,35 +127,35 @@ namespace Onwrd.EntityFrameworkCore.Tests
 
         internal class TestOnwardProcessor : IOnwardProcessor
         {
-            private readonly SentMessageAudit sentMessageAudit;
+            private readonly ProcessedEventAudit processedEventAudit;
 
-            public TestOnwardProcessor(SentMessageAudit sentMessageAudit)
+            public TestOnwardProcessor(ProcessedEventAudit processedEventAudit)
             {
-                this.sentMessageAudit = sentMessageAudit;
+                this.processedEventAudit = processedEventAudit;
             }
 
-            public Task Process<T>(T message, MessageMetadata messageMetadata)
+            public Task Process<T>(T @event, EventMetadata eventMetadata)
             {
-                this.sentMessageAudit.Audit(message);
+                this.processedEventAudit.Audit(@event);
 
                 return Task.CompletedTask;
             }
         }
 
-        internal class SentMessageAudit
+        internal class ProcessedEventAudit
         {
-            private readonly List<object> _sentMessages;
+            private readonly List<object> _processedEvents;
 
-            public IEnumerable<object> SentMessages => _sentMessages;
+            public IEnumerable<object> ProcessedEvents => _processedEvents;
 
-            public SentMessageAudit()
+            public ProcessedEventAudit()
             {
-                _sentMessages = new List<object>();
+                _processedEvents = new List<object>();
             }
 
-            public void Audit(object message)
+            public void Audit(object @event)
             {
-                _sentMessages.Add(message);
+                _processedEvents.Add(@event);
             }
         }
     }

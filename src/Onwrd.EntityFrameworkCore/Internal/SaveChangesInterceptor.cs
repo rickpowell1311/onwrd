@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Diagnostics;
-using Onwrd.EntityFrameworkCore.Internal.MessageExtraction;
+using Onwrd.EntityFrameworkCore.Internal.EventExtraction;
 
 namespace Onwrd.EntityFrameworkCore.Internal
 {
@@ -12,13 +12,14 @@ namespace Onwrd.EntityFrameworkCore.Internal
             this.onwardProcessor = onwardProcessor;
         }
 
-        public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
+        public override InterceptionResult<int> SavingChanges(
+            DbContextEventData eventData, 
+            InterceptionResult<int> result)
         {
-            /* In the synchronous calls to the database, adding messages to the outbox is supported, but onward processing isn't
-             * because we don't know how the onward processor will behave and the implications involved in blocking calls
-             */
-            var messages = eventData.Context.ExtractMessages();
-            eventData.Context.AddToOutbox(messages);
+            /* In the synchronous calls to the database, adding events to the events table is supported, but onward processing isn't
+             * because we don't know how the onward processor will behave and the implications involved in blocking calls */
+            var events = eventData.Context.ExtractEvents();
+            eventData.Context.AddToEvents(events);
 
             return base.SavingChanges(eventData, result);
         }

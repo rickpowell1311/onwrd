@@ -2,7 +2,7 @@
 
 namespace Onwrd.EntityFrameworkCore
 {
-    internal class OutboxMessage
+    internal class Event
     {
         public Guid Id { get; set; }
 
@@ -14,12 +14,12 @@ namespace Onwrd.EntityFrameworkCore
 
         public string Contents { get; set; }
 
-        internal static OutboxMessage FromMessage(object message)
+        internal static Event FromContents(object contents)
         {
-            return new OutboxMessage
+            return new Event
             {
-                TypeId = message.GetType().FullName,
-                Contents = JsonSerializer.Serialize(message),
+                TypeId = contents.GetType().FullName,
+                Contents = JsonSerializer.Serialize(contents),
                 CreatedOn = DateTime.UtcNow,
                 DispatchedOn = null,
                 Id = Guid.NewGuid()

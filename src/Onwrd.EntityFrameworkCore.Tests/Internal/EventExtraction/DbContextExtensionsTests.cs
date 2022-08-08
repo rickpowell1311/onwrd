@@ -1,34 +1,29 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Onwrd.EntityFrameworkCore.Internal.MessageExtraction;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Onwrd.EntityFrameworkCore.Internal.EventExtraction;
 using Xunit;
 
-namespace Onwrd.EntityFrameworkCore.Tests.Internal.MessageExtraction
+namespace Onwrd.EntityFrameworkCore.Tests.Internal.EventExtraction
 {
     public class DbContextExtensionsTests
     {
         [Fact]
 
-        public void ExtractMessages_FromAddedEntityWithMessageInOutbox_ReturnsMessage()
+        public void ExtractEvents_FromAddedEntityWithRaisedEvents_ReturnsEvents()
         {
             var context = new TestContext();
             var entity = new TestEntity();
-            entity.AddMessageToOutbox();
+            entity.RaiseEvent();
 
             context.TestEntities.Add(entity);
 
-            var result = context.ExtractMessages()
-                .SingleOrDefault(x => x is TestMessage m && m.Greeting == "Hello from TestEntity");
+            var result = context.ExtractEvents()
+                .SingleOrDefault(x => x is RaisedEvent m && m.Greeting == "Hello from TestEntity");
 
             Assert.NotNull(result);
         }
 
         [Fact]
-        public async void ExtractMessages_FromUpdatedEntityWithMessageInOutbox_ReturnsMessage()
+        public async void ExtractEvents_FromUpdatedEntityWithRaisedEvent_ReturnsEvent()
         {
             var context = new TestContext();
             var entity = new TestEntity();
@@ -38,33 +33,33 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal.MessageExtraction
             await context.SaveChangesAsync();
 
             entity = await context.TestEntities.FindAsync(entity.Id);
-            entity.AddMessageToOutbox();
+            entity.RaiseEvent();
 
-            var result = context.ExtractMessages()
-                .SingleOrDefault(x => x is TestMessage m && m.Greeting == "Hello from TestEntity");
+            var result = context.ExtractEvents()
+                .SingleOrDefault(x => x is RaisedEvent m && m.Greeting == "Hello from TestEntity");
 
             Assert.NotNull(result);
         }
 
         [Fact]
 
-        public void ExtractMessages_FromAddedEntityWithAddedNavigationEntityWithMessageInOutbox_ReturnsMessage()
+        public void ExtractEvents_FromAddedEntityWithAddedNavigationEntityWithRaisedEvent_ReturnsEvent()
         {
             var context = new TestContext();
             var entity = new TestEntity();
             entity.NavigationEntity = new TestNavigationEntity();
-            entity.NavigationEntity.AddMessageToOutbox();
+            entity.NavigationEntity.RaiseEvent();
 
             context.TestEntities.Add(entity);
 
-            var result = context.ExtractMessages()
-                .SingleOrDefault(x => x is TestMessage m && m.Greeting == "Hello from TestNavigationEntity");
+            var result = context.ExtractEvents()
+                .SingleOrDefault(x => x is RaisedEvent e && e.Greeting == "Hello from TestNavigationEntity");
 
             Assert.NotNull(result);
         }
 
         [Fact]
-        public async void ExtractMessages_FromUpdatedEntityWithAddedNavigationEntityWithMessageInOutbox_ReturnsMessage()
+        public async void ExtractEvents_FromUpdatedEntityWithAddedNavigationEntityWithRaisedEvent_ReturnsEvent()
         {
             var context = new TestContext();
             var entity = new TestEntity();
@@ -75,10 +70,10 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal.MessageExtraction
             await context.SaveChangesAsync();
 
             entity = context.TestEntities.Find(entity.Id);
-            entity.NavigationEntity.AddMessageToOutbox();
+            entity.NavigationEntity.RaiseEvent();
 
-            var result = context.ExtractMessages()
-                .SingleOrDefault(x => x is TestMessage m && m.Greeting == "Hello from TestNavigationEntity");
+            var result = context.ExtractEvents()
+                .SingleOrDefault(x => x is RaisedEvent m && m.Greeting == "Hello from TestNavigationEntity");
 
             Assert.NotNull(result);
         }
@@ -112,7 +107,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal.MessageExtraction
             }
         }
 
-        internal class TestEntity : Outboxed
+        internal class TestEntity : EventRaiser
         {
             public Guid Id { get; set; }
 
@@ -123,13 +118,13 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal.MessageExtraction
                 Id = Guid.NewGuid();
             }
 
-            public void AddMessageToOutbox()
+            public void RaiseEvent()
             {
-                AddToOutbox(new TestMessage("TestEntity"));
+                RaiseEvent(new RaisedEvent("TestEntity"));
             }
         }
 
-        internal class TestNavigationEntity : Outboxed
+        internal class TestNavigationEntity : EventRaiser
         {
             public Guid Id { get; set; }
 
@@ -137,24 +132,24 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal.MessageExtraction
             {
                 Id = Guid.NewGuid();
 
-                AddToOutbox(new TestMessage("TestNavigationEntity"));
+                RaiseEvent(new RaisedEvent("TestNavigationEntity"));
             }
 
-            public void AddMessageToOutbox()
+            public void RaiseEvent()
             {
-                AddToOutbox(new TestMessage("TestEntity"));
+                RaiseEvent(new RaisedEvent("TestEntity"));
             }
         }
 
-        internal class TestMessage
+        internal class RaisedEvent
         {
             public string Greeting { get; set; }
 
-            public TestMessage()
+            public RaisedEvent()
             {
             }
 
-            public TestMessage(string sender)
+            public RaisedEvent(string sender)
             {
                 Greeting = $"Hello from {sender}";
             }

@@ -2,7 +2,7 @@
 {
     internal class NoOpOnwardProcessor : IOnwardProcessor
     {
-        public Task Process<T>(T message, MessageMetadata messageMetadata)
+        public Task Process<T>(T @event, EventMetadata eventMetadata)
         {
             return Task.CompletedTask;
         }
