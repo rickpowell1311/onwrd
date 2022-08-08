@@ -41,14 +41,12 @@ namespace Onwrd.EntityFrameworkCore.Tests
                     .Build();
             }
 
-            public void Configure(DbContextOptionsBuilder optionsBuilder)
+            public void Configure(DbContextOptionsBuilder optionsBuilder, string databaseName)
             {
-                var databaseUniqueId = $"OnwrdTest-{Guid.NewGuid()}";
-
                 optionsBuilder
                     .UseSqlServer(ReplaceDatabaseInConnectionString(
                         TestcontainerDatabase.ConnectionString,
-                        databaseUniqueId));
+                        databaseName));
             }
 
             private static string ReplaceDatabaseInConnectionString(
@@ -83,13 +81,14 @@ namespace Onwrd.EntityFrameworkCore.Tests
                     .Build();
             }
 
-            public void Configure(DbContextOptionsBuilder optionsBuilder)
+            public void Configure(
+                DbContextOptionsBuilder optionsBuilder,
+                string databaseName)
             {
-                var databaseUniqueId = $"OnwrdTest-{Guid.NewGuid()}";
-
-                optionsBuilder.UseNpgsql(ReplaceDatabaseInConnectionString(
-                    TestcontainerDatabase.ConnectionString,
-                    databaseUniqueId));
+                optionsBuilder
+                    .UseNpgsql(ReplaceDatabaseInConnectionString(
+                        TestcontainerDatabase.ConnectionString,
+                        databaseName));
             }
 
             private static string ReplaceDatabaseInConnectionString(

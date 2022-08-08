@@ -25,7 +25,7 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations
             IDatabaseProvider databaseProvider) : 
                 base(
                     migrationsAssembly,
-                    OverrideHistoryRepositorySchema(historyRepository),
+                    OverrideHistoryRepositorySchema(historyRepository, databaseProvider),
                     databaseCreator,
                     migrationsSqlGenerator,
                     rawSqlCommandBuilder,
@@ -40,7 +40,9 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations
         {
         }
 
-        private static IHistoryRepository OverrideHistoryRepositorySchema(IHistoryRepository historyRepository)
+        private static IHistoryRepository OverrideHistoryRepositorySchema(
+            IHistoryRepository historyRepository,
+            IDatabaseProvider databaseProvider)
         {
             var propertyName = "TableSchema";
             var readonlyBackingFieldName = $"<{propertyName}>k__BackingField";
@@ -55,7 +57,21 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations
                 throw new Exception("Unable to configure EF core migrations HistoryRepository schema for Onwrd");
             }
 
-            tableSchemaField.SetValue(historyRepository, "Onwrd");
+            var schemaName = string.Empty;
+
+
+            switch (databaseProvider.Name)
+            {
+                case "Microsoft.EntityFrameworkCore.SqlServer":
+                    schemaName = "Onwrd";
+                    break;
+                case "Npgsql.EntityFrameworkCore.PostgreSQL":
+                    schemaName = "onwrd";
+                    break;
+                throw new NotSupportedException($"Provider '{databaseProvider.Name}' is not supported");
+            }
+
+            tableSchemaField.SetValue(historyRepository, schemaName);
 
             return historyRepository;
         }

@@ -13,7 +13,18 @@ namespace Onwrd.EntityFrameworkCore.Internal.ContextConfiguration
         {
             base.Customize(modelBuilder, context);
 
-            modelBuilder.AddOnwrdModel();
+            switch (context.Database.ProviderName)
+            {
+                case "Microsoft.EntityFrameworkCore.SqlServer":
+                case "Microsoft.EntityFrameworkCore.InMemory":
+                    new SqlServerOnwrdModelBuilder().Build(modelBuilder);
+                    break;
+                case "Npgsql.EntityFrameworkCore.PostgreSQL":
+                    new PostgreSqlOnwrdModelBuilder().Build(modelBuilder);
+                    break;
+                default: 
+                    throw new NotSupportedException($"Provider '{context.Database.ProviderName}' is not supported");
+            }
         }
     }
 }

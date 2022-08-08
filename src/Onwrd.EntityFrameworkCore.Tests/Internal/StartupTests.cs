@@ -36,7 +36,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             services.AddDbContext<TestContext>(
                 (_, builder) =>
                 {
-                    supportedDatabase.Configure(builder);
+                    supportedDatabase.Configure(builder, databaseUniqueId);
                 },
                 onwrdConfig => { },
                 ServiceLifetime.Transient);
@@ -59,7 +59,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             services.AddDbContext<TestContext>(
                 (_, builder) =>
                 {
-                    supportedDatabase.Configure(builder);
+                    supportedDatabase.Configure(builder, databaseUniqueId);
                 },
                 onwrdConfig => { },
                 ServiceLifetime.Transient);

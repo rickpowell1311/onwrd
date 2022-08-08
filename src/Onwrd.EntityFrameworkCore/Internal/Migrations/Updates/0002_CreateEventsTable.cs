@@ -29,17 +29,17 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations.Updates
         public string GetSqlForPostgreSql()
         {
             return
-                @"CREATE TABLE Onwrd.Events
+                @"CREATE TABLE onwrd.events
                 (
-	                Id CHAR(36) NOT NULL,
-	                CreatedOn timestamp(6) NOT NULL,
-	                DispatchedOn timestamp(6) NULL,
-	                TypeId TEXT NOT NULL,
-	                Contents TEXT NOT NULL,
-	                CONSTRAINT PK_Onwrd_Events PRIMARY KEY (Id)
+	                id CHAR(36) NOT NULL,
+	                created_on timestamp(6) NOT NULL,
+	                dispatched_on timestamp(6) NULL,
+	                type_id TEXT NOT NULL,
+	                contents TEXT NOT NULL,
+	                CONSTRAINT PK_onwrd_events PRIMARY KEY (Id)
                 );
 
-                CREATE INDEX IX_Onwrd_Events_DispatchedOn ON Onwrd.Events USING btree (DispatchedOn);
+                CREATE INDEX IX_onwrd_events_dispatched_on ON onwrd.events USING btree (dispatched_on);
             ";
         }
     }
