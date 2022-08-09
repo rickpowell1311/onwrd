@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Onwrd.EntityFrameworkCore.Internal;
 using Xunit;
 
 namespace Onwrd.EntityFrameworkCore.Tests
@@ -28,22 +29,30 @@ namespace Onwrd.EntityFrameworkCore.Tests
         [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
         public async Task SaveChanges_ForSupportedDatabase_ProcessesEvent(ISupportedDatabase supportedDatabase)
         {
+            var databaseName = $"OnwrdTest-720D6C5E-9F1A-43DB-90F6-685562D087CC";
+
+            // Start the container 
             this.database = supportedDatabase.TestcontainerDatabase;
             await this.database.StartAsync();
 
+            /* Create a version of the database without any Onwrd schema by configuring a context
+             * with has no onwrd models added */
+            var contextBuilder = new DbContextOptionsBuilder<TestContext>();
+            supportedDatabase.Configure(contextBuilder, databaseName);
+
+            var databaseCreationContext = new TestContext(contextBuilder.Options);
+            await databaseCreationContext.Database.EnsureCreatedAsync();
+
+            // Configure the context with Onwrd in a service provider
             var services = new ServiceCollection();
-            var databaseUniqueId = $"onward-{Guid.NewGuid()}";
             services.AddDbContext<TestContext>(
                 (_, builder) =>
                 {
-                    supportedDatabase.Configure(builder);
+                    supportedDatabase.Configure(builder, databaseName);
                 },
                 onwrdConfig =>
                 {
                     onwrdConfig.UseOnwardProcessor<TestOnwardProcessor>();
-                    /* Because we have a unique database for each test, we can just let this context
-                       control the creation of the schema */
-                    onwrdConfig.RunMigrations = false;
                 },
                 ServiceLifetime.Transient);
 
@@ -51,14 +60,13 @@ namespace Onwrd.EntityFrameworkCore.Tests
 
             var serviceProvider = services.BuildServiceProvider();
 
+            // Run the test
             await ExecuteEndToEndTest(serviceProvider);
         }
 
         private static async Task ExecuteEndToEndTest(IServiceProvider serviceProvider)
         {
-            // Run migrations
             var context = serviceProvider.GetService<TestContext>();
-            await context.Database.EnsureCreatedAsync();
 
             var testEntity = new TestEntity();
             testEntity.RaiseEvent();
