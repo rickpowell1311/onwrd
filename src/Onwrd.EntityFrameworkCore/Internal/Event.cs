@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using System.Text.Json;
 
-namespace Onwrd.EntityFrameworkCore
+namespace Onwrd.EntityFrameworkCore.Internal
 {
     internal class Event
     {

@@ -1,6 +1,7 @@
-﻿using Xunit;
+﻿using Onwrd.EntityFrameworkCore.Internal;
+using Xunit;
 
-namespace Onwrd.EntityFrameworkCore.Tests
+namespace Onwrd.EntityFrameworkCore.Tests.Internal
 {
     public class EventTests
     {
