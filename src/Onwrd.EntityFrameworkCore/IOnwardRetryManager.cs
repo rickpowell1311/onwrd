@@ -1,6 +1,9 @@
-﻿namespace Onwrd.EntityFrameworkCore
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace Onwrd.EntityFrameworkCore
 {
-    public interface IOnwardRetryManager
+    public interface IOnwardRetryManager<TContext>
+        where TContext : DbContext
     {
         Task RetryOnwardProcessing(CancellationToken cancellationToken);
     }

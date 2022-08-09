@@ -27,19 +27,23 @@ namespace Onwrd.EntityFrameworkCore
                 serviceCollection.AddTransient(typeof(IOnwardProcessor), config.OnwardProcessorType);
             }
 
-            serviceCollection.AddTransient<SaveChangesInterceptor>();
+            serviceCollection.AddScoped<SaveChangesInterceptor<TContext>>();
+            serviceCollection.AddTransient<IOnwardProcessingUnitOfWork<TContext>, OnwardProcessingUnitOfWork<TContext>>();
             serviceCollection.AddTransient<OnConnectingInterceptor>();
             serviceCollection.AddSingleton<RunOnce>();
             serviceCollection.AddTransient<Startup>();
+            serviceCollection.AddTransient<IWait, Wait>();
 
-            serviceCollection.AddTransient<IOnwardRetryManager, OnwardRetryManager>();
+            // Retries
+            serviceCollection.AddTransient<IOnwardRetryManager<TContext>, OnwardRetryManager<TContext>>();
+            serviceCollection.AddSingleton(config.RetryConfiguration);
 
             void optionsActionOverride(IServiceProvider serviceProvider, DbContextOptionsBuilder builder)
             {
                 optionsAction(serviceProvider, builder);
                 builder.AddOnwrdModel();
                 builder.AddInterceptors(
-                    serviceProvider.GetRequiredService<SaveChangesInterceptor>(),
+                    serviceProvider.GetRequiredService<SaveChangesInterceptor<TContext>>(),
                     serviceProvider.GetRequiredService<OnConnectingInterceptor>());
             }
 

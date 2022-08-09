@@ -6,11 +6,19 @@ namespace Onwrd.EntityFrameworkCore
     {
         internal Type OnwardProcessorType { get; private set; }
 
+        internal OnwrdRetryConfiguration RetryConfiguration { get; private set; }
+
         public bool RunMigrations { get; set; } = true;
 
         internal OnwrdConfiguration()
         {
+            RetryConfiguration = new OnwrdRetryConfiguration();
             OnwardProcessorType = typeof(NoOpOnwardProcessor);
+        }
+
+        public void ConfigureRetryOptions(Action<OnwrdRetryConfiguration> retryConfig)
+        {
+            retryConfig(RetryConfiguration);
         }
 
         public void UseOnwardProcessor<T>()

@@ -1,25 +1,33 @@
-﻿using Microsoft.EntityFrameworkCore.Diagnostics;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Onwrd.EntityFrameworkCore.Internal.EventExtraction;
 
 namespace Onwrd.EntityFrameworkCore.Internal
 {
-    internal class SaveChangesInterceptor : Microsoft.EntityFrameworkCore.Diagnostics.SaveChangesInterceptor
+    internal class SaveChangesInterceptor<TContext> : SaveChangesInterceptor
+        where TContext : DbContext
     {
-        private readonly IOnwardProcessor onwardProcessor;
+        private readonly IOnwardProcessingUnitOfWork<TContext> unitOfWork;
 
-        public SaveChangesInterceptor(IOnwardProcessor onwardProcessor)
+        private readonly List<Guid> added;
+
+        public SaveChangesInterceptor(
+            IOnwardProcessor onwardProcessor,
+            IOnwardProcessingUnitOfWork<TContext> unitOfWork)
         {
-            this.onwardProcessor = onwardProcessor;
+            this.unitOfWork = unitOfWork;
+
+            this.added = new List<Guid>();
         }
 
         public override InterceptionResult<int> SavingChanges(
             DbContextEventData eventData, 
             InterceptionResult<int> result)
         {
-            /* In the synchronous calls to the database, adding events to the events table is supported, but onward processing isn't
-             * because we don't know how the onward processor will behave and the implications involved in blocking calls */
             var events = eventData.Context.ExtractEvents();
-            eventData.Context.AddToEvents(events);
+            var added = eventData.Context.AddToEvents(events);
+
+            this.added.AddRange(added.Select(x => x.Id));
 
             return base.SavingChanges(eventData, result);
         }
@@ -29,16 +37,36 @@ namespace Onwrd.EntityFrameworkCore.Internal
             InterceptionResult<int> result, 
             CancellationToken cancellationToken = default)
         {
-            InterceptionResult<int> innerResult = default;
+            var context = eventData.Context;
 
-            var saveChangesWrapper = new SaveChangesWrapper(eventData.Context, async () =>
+            var events = context.ExtractEvents();
+            var added = eventData.Context.AddToEvents(events);
+
+            this.added.AddRange(added.Select(x => x.Id));
+
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+
+        public override async ValueTask<int> SavedChangesAsync(
+            SaveChangesCompletedEventData eventData, 
+            int result, CancellationToken 
+            cancellationToken = default)
+        {
+            var baseResult = await base.SavedChangesAsync(eventData, result, cancellationToken);
+
+            while (added.TryPop(out var addition))
             {
-                innerResult = await base.SavingChangesAsync(eventData, result, cancellationToken);
-            }, this.onwardProcessor);
+                try
+                {
+                    await this.unitOfWork.ProcessEvent(addition, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    // TODO: Log
+                }
+            }
 
-            await saveChangesWrapper.SaveChangesAsync();
-
-            return innerResult;
+            return baseResult;
         }
     }
 }

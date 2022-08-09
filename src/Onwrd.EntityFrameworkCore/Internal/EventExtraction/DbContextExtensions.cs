@@ -1,6 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Onwrd.EntityFrameworkCore.Internal.EventExtraction
 {
@@ -18,17 +16,17 @@ namespace Onwrd.EntityFrameworkCore.Internal.EventExtraction
             return events;
         }
 
-        internal static IEnumerable<(Event Event, object Contents)> AddToEvents(
+        internal static IEnumerable<Event> AddToEvents(
             this DbContext context, 
             List<object> eventsContents)
         {
             var events = eventsContents
-                .Select(x => new { Event = Event.FromContents(x), Contents = x })
+                .Select(x => Event.FromContents(x))
                 .ToList();
 
-            context.AddRange(events.Select(x => x.Event));
+            context.AddRange(events);
 
-            return events.Select(x => (x.Event, x.Contents));
+            return events;
         }
     }
 }

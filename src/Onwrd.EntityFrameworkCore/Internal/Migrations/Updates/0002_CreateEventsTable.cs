@@ -26,7 +26,7 @@
             return
                 @"CREATE TABLE onwrd.events
                 (
-	                id CHAR(36) NOT NULL,
+	                id UUID NOT NULL,
 	                created_on timestamp(6) NOT NULL,
 	                dispatched_on timestamp(6) NULL,
 	                type_id TEXT NOT NULL,
