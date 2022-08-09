@@ -32,6 +32,8 @@ namespace Onwrd.EntityFrameworkCore
             serviceCollection.AddSingleton<RunOnce>();
             serviceCollection.AddTransient<Startup>();
 
+            serviceCollection.AddTransient<IOnwardRetryManager, OnwardRetryManager>();
+
             void optionsActionOverride(IServiceProvider serviceProvider, DbContextOptionsBuilder builder)
             {
                 optionsAction(serviceProvider, builder);
