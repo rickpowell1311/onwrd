@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Onwrd.EntityFrameworkCore.Internal.Migrations.Updates
+﻿namespace Onwrd.EntityFrameworkCore.Internal.Migrations.Updates
 {
     internal class CreateEventsTable : IOnwrdMigrationUpdate
     {
@@ -18,6 +12,7 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations.Updates
 	                DispatchedOn datetime2 NULL,
 	                TypeId NVARCHAR(MAX) NOT NULL,
 	                Contents NVARCHAR(MAX) NOT NULL,
+                    AssemblyName NVARCHAR(MAX) NOT NULL,
 	                CONSTRAINT PK_Onwrd_Events PRIMARY KEY CLUSTERED (Id),
                     INDEX IX_Onwrd_Events_DispatchedOn NONCLUSTERED(DispatchedOn)
                 )
@@ -36,6 +31,7 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations.Updates
 	                dispatched_on timestamp(6) NULL,
 	                type_id TEXT NOT NULL,
 	                contents TEXT NOT NULL,
+                    assembly_name TEXT NOT NULL,
 	                CONSTRAINT PK_onwrd_events PRIMARY KEY (Id)
                 );
 
