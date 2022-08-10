@@ -127,8 +127,7 @@ Onwrd is built and maintained under an MIT license and always will be.
 
 # Short term roadmap
 
-- Support for retry mechanisms
-- Support inbox pattern (change current implementation to be agnostic of outboxing)
+- Extended documentation
 - Add examples
 - Support for integrating with logging providers (prioritising Serilog)
 - Support for batched event onward processing
