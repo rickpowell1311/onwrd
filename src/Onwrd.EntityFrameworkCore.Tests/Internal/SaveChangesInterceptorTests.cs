@@ -1,18 +1,28 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using FakeItEasy;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Onwrd.EntityFrameworkCore.Internal;
 using Xunit;
 
 namespace Onwrd.EntityFrameworkCore.Tests.Internal
 {
-    public class SaveChangesWrapperTests
+    public class SaveChangesInterceptorTests
     {
+        private readonly string databaseName;
         private readonly TestOnwardProcessor onwardProcessor;
-        private readonly TestContext testContext;
+        private readonly IOnwardProcessingUnitOfWork<TestContext> unitOfWork;
 
-        public SaveChangesWrapperTests()
+        public SaveChangesInterceptorTests()
         {
-            onwardProcessor = new TestOnwardProcessor();
-            testContext = new TestContext();
+            this.databaseName = $"OnwardTest-{Guid.NewGuid()}";
+            this.onwardProcessor = new TestOnwardProcessor();
+
+            var services = new ServiceCollection();
+            services.AddTransient(sp => Context());
+
+            this.unitOfWork = new OnwardProcessingUnitOfWork<TestContext>(
+                services.BuildServiceProvider(),
+                this.onwardProcessor);
         }
 
         [Fact]
@@ -21,11 +31,12 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             var entity = new TestEntity();
             entity.RaiseEvent();
 
-            this.testContext.TestEntities.Add(entity);
+            var context = Context();
 
-            await SaveChangesWrapper().SaveChangesAsync();
+            context.TestEntities.Add(entity);
+            await context.SaveChangesAsync();
 
-            var events = await this.testContext.Set<Event>().ToListAsync();
+            var events = await Context().Set<Event>().ToListAsync();
 
             Assert.Single(events);
         }
@@ -36,9 +47,10 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             var entity = new TestEntity();
             entity.RaiseEvent();
 
-            this.testContext.TestEntities.Add(entity);
+            var context = Context();
 
-            await SaveChangesWrapper().SaveChangesAsync();
+            context.TestEntities.Add(entity);
+            await context.SaveChangesAsync();
 
             Assert.Single(this.onwardProcessor.Processed);
         }
@@ -49,11 +61,12 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             var entity = new TestEntity();
             entity.RaiseEvent();
 
-            this.testContext.TestEntities.Add(entity);
+            var context = Context();
 
-            await SaveChangesWrapper().SaveChangesAsync();
+            context.TestEntities.Add(entity);
+            await context.SaveChangesAsync();
 
-            var @event = await this.testContext.Set<Event>().SingleAsync();
+            var @event = await Context().Set<Event>().SingleAsync();
 
             Assert.True(@event.DispatchedOn.HasValue);
         }
@@ -64,12 +77,14 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             var entity = new TestEntity();
             entity.RaiseEvent();
 
-            this.testContext.TestEntities.Add(entity);
+            var context = Context();
+            context.TestEntities.Add(entity);
+
             this.onwardProcessor.ShouldThrow = true;
 
-            await SaveChangesWrapper().SaveChangesAsync();
+            await context.SaveChangesAsync();
 
-            var @event = await this.testContext.Set<Event>().SingleAsync();
+            var @event = await Context().Set<Event>().SingleAsync();
 
             Assert.False(@event.DispatchedOn.HasValue);
         }
@@ -81,39 +96,50 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             entity.RaiseEvent();
             entity.RaiseEvent();
 
-            this.testContext.TestEntities.Add(entity);
+            var context = Context();
 
-            await SaveChangesWrapper().SaveChangesAsync();
+            context.TestEntities.Add(entity);
+            await context.SaveChangesAsync();
 
             Assert.Equal(2, this.onwardProcessor.Processed.Count());
         }
 
-        private SaveChangesWrapper SaveChangesWrapper()
+        private TestContext Context()
         {
-            return new SaveChangesWrapper(
-                this.testContext,
-                () => this.testContext.SaveChangesAsync(),
-                this.onwardProcessor);
+            return new TestContext(
+                this.databaseName,
+                this.onwardProcessor,
+                this.unitOfWork);
         }
 
         internal class TestContext : DbContext
         {
             public DbSet<TestEntity> TestEntities { get; set; }
 
-            public TestContext() : base(Options)
+            public TestContext(
+                string databaseName,
+                IOnwardProcessor onwardProcessor,
+                IOnwardProcessingUnitOfWork<TestContext> unitOfWork) : base(GetOptions(
+                    databaseName,
+                    onwardProcessor,
+                    unitOfWork))
             {
             }
 
-            private static DbContextOptions<TestContext> Options
+            private static DbContextOptions<TestContext> GetOptions(
+                string databaseName,
+                IOnwardProcessor onwardProcessor,
+                IOnwardProcessingUnitOfWork<TestContext> unitOfWork)
             {
-                get
-                {
-                    var optionsBuilder = new DbContextOptionsBuilder<TestContext>();
-                    optionsBuilder.UseInMemoryDatabase(Guid.NewGuid().ToString());
-                    optionsBuilder.AddOnwrdModel();
+                var optionsBuilder = new DbContextOptionsBuilder<TestContext>();
+                optionsBuilder.UseInMemoryDatabase(databaseName);
+                optionsBuilder.AddOnwrdModel();
+                optionsBuilder.AddInterceptors(
+                    new SaveChangesInterceptor<TestContext>(
+                        onwardProcessor,
+                        unitOfWork));
 
-                    return optionsBuilder.Options;
-                }
+                return optionsBuilder.Options;
             }
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -165,7 +191,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
                 _processed = new List<(object Event, EventMetadata Metadata)>();
             }
 
-            public Task Process<T>(T @event, EventMetadata eventMetadata)
+            public Task Process<T>(T @event, EventMetadata eventMetadata, CancellationToken cancellationToken = default)
             {
                 if (ShouldThrow)
                 {

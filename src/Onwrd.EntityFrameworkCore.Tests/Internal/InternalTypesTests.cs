@@ -1,3 +1,4 @@
+using Onwrd.EntityFrameworkCore.Internal;
 using Xunit;
 
 namespace Onwrd.EntityFrameworkCore.Tests.Internal
@@ -7,12 +8,12 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         [Fact]
         public void ImplementationNamespace_TypesInImplementationNamespace_AreInternal()
         {
-            var publicTypesInImplementationNamespace = typeof(Event).Assembly.GetTypes()
+            var publicTypesInInternalNamespace = typeof(Event).Assembly.GetTypes()
                 .Where(x => !string.IsNullOrWhiteSpace(x.Namespace) 
                     && x.Namespace.Contains("Onwrd.EntityFrameworkCore.Internal")
                     && x.IsVisible);
 
-            Assert.Empty(publicTypesInImplementationNamespace);
+            Assert.Empty(publicTypesInInternalNamespace);
         }
     }
 }

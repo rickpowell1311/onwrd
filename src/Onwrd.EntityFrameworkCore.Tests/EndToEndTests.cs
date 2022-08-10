@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Onwrd.EntityFrameworkCore.Internal;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Onwrd.EntityFrameworkCore.Tests
@@ -29,7 +30,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
         [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
         public async Task SaveChanges_ForSupportedDatabase_ProcessesEvent(ISupportedDatabase supportedDatabase)
         {
-            var databaseName = $"OnwrdTest-720D6C5E-9F1A-43DB-90F6-685562D087CC";
+            var databaseName = $"OnwrdTest-{Guid.NewGuid()}";
 
             // Start the container 
             this.database = supportedDatabase.TestcontainerDatabase;
@@ -53,19 +54,12 @@ namespace Onwrd.EntityFrameworkCore.Tests
                 onwrdConfig =>
                 {
                     onwrdConfig.UseOnwardProcessor<TestOnwardProcessor>();
-                },
-                ServiceLifetime.Transient);
+                });
 
             services.AddSingleton<ProcessedEventAudit>();
 
             var serviceProvider = services.BuildServiceProvider();
 
-            // Run the test
-            await ExecuteEndToEndTest(serviceProvider);
-        }
-
-        private static async Task ExecuteEndToEndTest(IServiceProvider serviceProvider)
-        {
             var context = serviceProvider.GetService<TestContext>();
 
             var testEntity = new TestEntity();
@@ -78,6 +72,67 @@ namespace Onwrd.EntityFrameworkCore.Tests
             var processedEventAudit = serviceProvider.GetService<ProcessedEventAudit>();
 
             Assert.Single(processedEventAudit.ProcessedEvents);
+        }
+
+        [Theory]
+        [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
+        public async Task RetryOnwardProcessing_ForSupportedDatabaseWithUnprocessedEvent_ProcessesEvent(
+            ISupportedDatabase supportedDatabase)
+        {
+            var databaseName = $"OnwrdTest-{Guid.NewGuid()}";
+
+            // Start the container 
+            this.database = supportedDatabase.TestcontainerDatabase;
+            await this.database.StartAsync();
+
+            /* Create a version of the database without any Onwrd schema by configuring a context
+             * with has no onwrd models added */
+            var contextBuilder = new DbContextOptionsBuilder<TestContext>();
+            supportedDatabase.Configure(contextBuilder, databaseName);
+
+            var databaseCreationContext = new TestContext(contextBuilder.Options);
+            await databaseCreationContext.Database.EnsureCreatedAsync();
+
+            // Configure the context with Onwrd in a service provider
+            var services = new ServiceCollection();
+            services.AddDbContext<TestContext>(
+                (_, builder) =>
+                {
+                    supportedDatabase.Configure(builder, databaseName);
+                },
+                onwrdConfig =>
+                {
+                    onwrdConfig.UseOnwardProcessor<TestOnwardProcessor>();
+                    onwrdConfig.ConfigureRetryOptions(retryConfig =>
+                    {
+                        retryConfig.PollPeriod = TimeSpan.FromSeconds(1);
+                        retryConfig.Attempts = 3;
+                        retryConfig.RetryAfter = TimeSpan.FromSeconds(0);
+                        retryConfig.StopWhenNothingProcessed = true;
+                    });
+                });
+
+            services.AddSingleton<ProcessedEventAudit>();
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            /* Add a message to the context directly so that the 
+             * message is not processed immediately */
+            var context = serviceProvider.GetRequiredService<TestContext>();
+            context
+                .Set<Event>()
+                .Add(Event.FromContents(new TestEvent("Test")));
+
+            await context.SaveChangesAsync();
+
+            Assert.Empty(serviceProvider.GetService<ProcessedEventAudit>().ProcessedEvents);
+
+            /* Ensure the retry manager processes the message */
+            var retryManager = serviceProvider.GetService<IOnwardRetryManager<TestContext>>();
+
+            await retryManager.RetryOnwardProcessing(CancellationToken.None);
+
+            Assert.Single(serviceProvider.GetService<ProcessedEventAudit>().ProcessedEvents);
         }
 
         internal class TestContext : DbContext
@@ -142,7 +197,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
                 this.processedEventAudit = processedEventAudit;
             }
 
-            public Task Process<T>(T @event, EventMetadata eventMetadata)
+            public Task Process<T>(T @event, EventMetadata eventMetadata, CancellationToken cancellationToken = default)
             {
                 this.processedEventAudit.Audit(@event);
 

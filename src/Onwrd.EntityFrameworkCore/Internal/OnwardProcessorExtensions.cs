@@ -4,7 +4,8 @@
     {
         internal static async Task ProcessEvent(
             this IOnwardProcessor onwardProcessor, 
-            (Event Event, object Contents) eventPair)
+            (Event Event, object Contents) eventPair,
+            CancellationToken cancellationToken = default)
         {
             var method = typeof(IOnwardProcessor).GetMethod("Process");
 
@@ -17,7 +18,8 @@
                     {
                         Id = eventPair.Event.Id,
                         CreatedOn = eventPair.Event.CreatedOn
-                    }
+                    },
+                    cancellationToken
                 }) as Task;
 
             await invocation;

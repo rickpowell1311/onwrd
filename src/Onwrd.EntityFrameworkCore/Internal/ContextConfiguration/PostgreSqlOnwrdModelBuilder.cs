@@ -16,6 +16,7 @@ namespace Onwrd.EntityFrameworkCore.Internal.ContextConfiguration
                     .HasColumnName("id")
                     .ValueGeneratedNever();
 
+                cfg.Property(x => x.AssemblyName).HasColumnName("assembly_name");
                 cfg.Property(x => x.Contents).HasColumnName("contents");
                 cfg.Property(x => x.CreatedOn).HasColumnName("created_on");
                 cfg.Property(x => x.DispatchedOn).HasColumnName("dispatched_on");
