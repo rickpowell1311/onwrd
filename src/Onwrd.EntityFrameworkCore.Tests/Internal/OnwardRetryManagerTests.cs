@@ -29,18 +29,6 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public async Task RetryOnwardProcessing_WhenCancelled_ThrowsTaskCanceledException()
-        {
-            var sut = RetryManager();
-
-            var cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.CancelAfter(TimeSpan.FromMilliseconds(50));
-
-            await Assert.ThrowsAsync<TaskCanceledException>(
-                () => sut.RetryOnwardProcessing(cancellationTokenSource.Token));
-        }
-
-        [Fact]
         public async Task RetryOnwardProcessing_WhenStopAfterNothingProcessedSetToTrue_DoesNotThrowTaskCanceledException()
         {
             this.onwardRetryConfiguration.StopWhenNothingProcessed = true;
