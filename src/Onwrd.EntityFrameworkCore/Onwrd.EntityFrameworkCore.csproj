@@ -9,6 +9,7 @@
     <PackageDescription>Onwrd - Adopt the outboxing pattern with Entity Framework Core</PackageDescription>
     <Description>Onwrd - Adopt the outboxing pattern with Entity Framework Core</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

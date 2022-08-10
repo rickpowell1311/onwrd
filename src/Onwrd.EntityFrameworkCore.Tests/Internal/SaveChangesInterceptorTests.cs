@@ -108,7 +108,6 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         {
             return new TestContext(
                 this.databaseName,
-                this.onwardProcessor,
                 this.unitOfWork);
         }
 
@@ -118,17 +117,14 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
 
             public TestContext(
                 string databaseName,
-                IOnwardProcessor onwardProcessor,
                 IOnwardProcessingUnitOfWork<TestContext> unitOfWork) : base(GetOptions(
                     databaseName,
-                    onwardProcessor,
                     unitOfWork))
             {
             }
 
             private static DbContextOptions<TestContext> GetOptions(
                 string databaseName,
-                IOnwardProcessor onwardProcessor,
                 IOnwardProcessingUnitOfWork<TestContext> unitOfWork)
             {
                 var optionsBuilder = new DbContextOptionsBuilder<TestContext>();
@@ -136,7 +132,6 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
                 optionsBuilder.AddOnwrdModel();
                 optionsBuilder.AddInterceptors(
                     new SaveChangesInterceptor<TestContext>(
-                        onwardProcessor,
                         unitOfWork));
 
                 return optionsBuilder.Options;

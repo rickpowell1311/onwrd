@@ -11,9 +11,7 @@ namespace Onwrd.EntityFrameworkCore.Internal
 
         private readonly List<Guid> added;
 
-        public SaveChangesInterceptor(
-            IOnwardProcessor onwardProcessor,
-            IOnwardProcessingUnitOfWork<TContext> unitOfWork)
+        public SaveChangesInterceptor(IOnwardProcessingUnitOfWork<TContext> unitOfWork)
         {
             this.unitOfWork = unitOfWork;
 
@@ -60,7 +58,7 @@ namespace Onwrd.EntityFrameworkCore.Internal
                 {
                     await this.unitOfWork.ProcessEvent(addition, cancellationToken);
                 }
-                catch (Exception ex)
+                catch
                 {
                     // TODO: Log
                 }
