@@ -21,18 +21,15 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             A.CallTo(() => this.onwardProcessingUnitOfWork.ProcessNext(A<CancellationToken>._))
                 .Returns(UnitOfWorkResult.NoEvents);
 
-            onwardRetryConfiguration.PollPeriod = TimeSpan.FromSeconds(1);
-            onwardRetryConfiguration.Attempts = 5;
+            onwardRetryConfiguration.MaximumRetryAttempts = 5;
             onwardRetryConfiguration.RetryAfter = TimeSpan.FromSeconds(3);
 
             this.wait = A.Fake<IWait>();
         }
 
         [Fact]
-        public async Task RetryOnwardProcessing_WhenStopAfterNothingProcessedSetToTrue_DoesNotThrowTaskCanceledException()
+        public async Task RetryOnwardProcessing_WhenProcessingCompleteBeforeCancellation_DoesNotThrowTaskCanceledException()
         {
-            this.onwardRetryConfiguration.StopWhenNothingProcessed = true;
-
             var sut = RetryManager();
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -42,10 +39,8 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         }
 
         [Fact]
-        public async Task RetryOnwardProcessing_WhenEventsProcessedAndStopAfterNothingProcessedSetToTrue_ContinuesUntilNoMore()
+        public async Task RetryOnwardProcessing_WhenEventsProcessed_ContinuesUntilNoMore()
         {
-            this.onwardRetryConfiguration.StopWhenNothingProcessed = true;
-
             var processed = 0;
             var numberOfEventsToProcess = 10;
 
@@ -63,53 +58,43 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
 
             var sut = RetryManager();
 
-            await sut.RetryOnwardProcessing(CancellationToken.None);
+            var result = await sut.RetryOnwardProcessing(CancellationToken.None);
 
             Assert.Equal(numberOfEventsToProcess, processed);
-        }
-
-        [Fact]
-        public async Task RetryOnwardProcessing_WhenNothingToProcess_WaitsForPollPeriod()
-        {
-            bool hasWaited = false;
-            var cancellationTokenSource = new CancellationTokenSource();
-
-            A.CallTo(() => this.onwardProcessingUnitOfWork.ProcessNext(A<CancellationToken>._))
-                .ReturnsLazily(() =>
-                {
-                    if (!hasWaited)
-                    {
-                        hasWaited = true;
-                        return UnitOfWorkResult.NoEvents;
-                    }
-
-                    cancellationTokenSource.Cancel();
-                    return UnitOfWorkResult.NoEvents;
-                });
-
-            var sut = RetryManager();
-
-            await Assert.ThrowsAsync<TaskCanceledException>(
-                () => sut.RetryOnwardProcessing(cancellationTokenSource.Token));
-
-            A.CallTo(() => wait.WaitFor(this.onwardRetryConfiguration.PollPeriod, A<CancellationToken>._))
-                .MustHaveHappened();
+            Assert.True(result.IsSuccess);
+            Assert.IsType<SuccessfulRetryResult>(result);
+            Assert.Equal(numberOfEventsToProcess, ((SuccessfulRetryResult)result).NumberOfEventsProcessed);
         }
 
         [Fact]
         public async Task RetryOnwardProcessing_WhenRetriesExceeded_RetriesUpToRetryAttemptsWhenOnwardProcessingFails()
         {
-            this.onwardRetryConfiguration.StopWhenNothingProcessed = true;
-
             A.CallTo(() => this.onwardProcessingUnitOfWork.ProcessNext(A<CancellationToken>._))
                 .ThrowsAsync(new Exception("Oops"));
 
             var sut = RetryManager();
 
-            await sut.RetryOnwardProcessing(CancellationToken.None);
+            var result = await sut.RetryOnwardProcessing(CancellationToken.None);
+
+            /* When retries have been exceeded, we shouldn't wait again, so expected waits is Attempts - 1 
+                e.g. for 3 failed attempts, the execution should be:
+                    - Attempt 1
+                    - Wait
+                    - Attempt 2
+                    - Wait
+                    - Attempt 3
+             */
+            var expectedNumberOfWaits = this.onwardRetryConfiguration.MaximumRetryAttempts - 1;
 
             A.CallTo(() => wait.WaitFor(this.onwardRetryConfiguration.RetryAfter, A<CancellationToken>._))
-                .MustHaveHappenedANumberOfTimesMatching(x => x == this.onwardRetryConfiguration.Attempts);
+                .MustHaveHappenedANumberOfTimesMatching(x => x == expectedNumberOfWaits);
+
+            Assert.False(result.IsSuccess);
+            Assert.IsType<UnsuccessfulRetryResult>(result);
+
+            var unsuccessfulRetryResult = (UnsuccessfulRetryResult)result;
+            Assert.Equal("Oops", unsuccessfulRetryResult.LastException.Message);
+            Assert.Equal(unsuccessfulRetryResult.NumberOfRetries, this.onwardRetryConfiguration.MaximumRetryAttempts);
         }
 
         private OnwardRetryManager<TestContext> RetryManager()
