@@ -19,33 +19,38 @@ namespace Onwrd.EntityFrameworkCore.Internal
             this.wait = wait;
         }
 
-        public async Task RetryOnwardProcessing(CancellationToken cancellationToken)
+        public async Task<RetryResult> RetryOnwardProcessing(CancellationToken cancellationToken)
         {
+            var eventsProcessed = 0;
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 var retryUnitOfWorkResult = await ProcessWithRetries(cancellationToken);
 
-                if (retryUnitOfWorkResult == RetryUnitOfWorkResult.Processed)
+                if (retryUnitOfWorkResult is UnsuccessfulRetryResult)
                 {
+                    return retryUnitOfWorkResult;
+                }
+
+                if (retryUnitOfWorkResult is SuccessfulRetryResult successfulRetryResult 
+                    && successfulRetryResult.NumberOfEventsProcessed > 0)
+                {
+                    eventsProcessed++;
                     continue;
                 }
 
-                if (this.configuration.StopWhenNothingProcessed)
-                {
-                    break;
-                }
-
-                await this.wait.WaitFor(this.configuration.PollPeriod, cancellationToken);
-
-                continue;
+                break;
             }
+
+            return new SuccessfulRetryResult(eventsProcessed);
         }
 
-        private async Task<RetryUnitOfWorkResult> ProcessWithRetries(CancellationToken cancellationToken)
+        private async Task<RetryResult> ProcessWithRetries(CancellationToken cancellationToken)
         {
             var attempts = 0;
+            Exception latestException = default;
 
-            while (attempts < configuration.Attempts)
+            while (attempts < configuration.MaximumRetryAttempts)
             {
                 try
                 {
@@ -53,20 +58,26 @@ namespace Onwrd.EntityFrameworkCore.Internal
 
                     return unitOfWorkResult switch
                     {
-                        UnitOfWorkResult.Processed => RetryUnitOfWorkResult.Processed,
-                        UnitOfWorkResult.NoEvents => RetryUnitOfWorkResult.NoEvents,
-                        _ => throw new NotImplementedException($"Cannot convert {nameof(UnitOfWorkResult)} '{unitOfWorkResult}' to {nameof(RetryUnitOfWorkResult)}"),
+                        UnitOfWorkResult.Processed => new SuccessfulRetryResult(1),
+                        UnitOfWorkResult.NoEvents => new SuccessfulRetryResult(0),
+                        _ => throw new NotImplementedException($"Cannot convert {nameof(UnitOfWorkResult)} '{unitOfWorkResult}' to {nameof(RetryResult)}"),
                     };
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // TODO: Log
                     attempts++;
+                    latestException = ex;
+
+                    if (attempts == configuration.MaximumRetryAttempts)
+                    {
+                        continue;
+                    }
+
                     await this.wait.WaitFor(this.configuration.RetryAfter, cancellationToken);
                 }
             }
 
-            return RetryUnitOfWorkResult.RetriesExceeded;
+            return new UnsuccessfulRetryResult(attempts, latestException);
         }
     }
 }

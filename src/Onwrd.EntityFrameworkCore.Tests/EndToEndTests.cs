@@ -105,10 +105,8 @@ namespace Onwrd.EntityFrameworkCore.Tests
                     onwrdConfig.UseOnwardProcessor<TestOnwardProcessor>();
                     onwrdConfig.ConfigureRetryOptions(retryConfig =>
                     {
-                        retryConfig.PollPeriod = TimeSpan.FromSeconds(1);
-                        retryConfig.Attempts = 3;
+                        retryConfig.MaximumRetryAttempts = 3;
                         retryConfig.RetryAfter = TimeSpan.FromSeconds(0);
-                        retryConfig.StopWhenNothingProcessed = true;
                     });
                 });
 
