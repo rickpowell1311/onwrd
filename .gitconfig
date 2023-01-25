@@ -1,0 +1,12 @@
+# To begin using, run the following command from from the repository root:
+#
+# git config --local include.path ../.gitconfig
+
+[alias]
+    tcommit = !TortoiseGitProc /command:commit /path:.
+    tlog = !TortoiseGitProc /command:log /path:.
+    rb = rebase
+    rbc = rebase --continue
+    pr = !start "https://github.com/rickpowell1311/onwrd/compare/`git branch --show-current`"
+    cp = cherry-pick
+    
