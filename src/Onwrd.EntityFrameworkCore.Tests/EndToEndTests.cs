@@ -36,8 +36,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
             this.database = supportedDatabase.TestcontainerDatabase;
             await this.database.StartAsync();
 
-            /* Create a version of the database without any Onwrd schema by configuring a context
-             * with has no onwrd models added */
+            /* Create the database by configuring the context */
             var contextBuilder = new DbContextOptionsBuilder<TestContext>();
             supportedDatabase.Configure(contextBuilder, databaseName);
 
@@ -53,6 +52,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
                 },
                 onwrdConfig =>
                 {
+                    onwrdConfig.RunMigrations = false;
                     onwrdConfig.UseOnwardProcessor<TestOnwardProcessor>();
                 });
 
@@ -84,8 +84,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
             this.database = supportedDatabase.TestcontainerDatabase;
             await this.database.StartAsync();
 
-            /* Create a version of the database without any Onwrd schema by configuring a context
-             * with has no onwrd models added */
+            /* Create the database by configuring the context */
             var contextBuilder = new DbContextOptionsBuilder<TestContext>();
             supportedDatabase.Configure(contextBuilder, databaseName);
 
@@ -101,6 +100,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
                 },
                 onwrdConfig =>
                 {
+                    onwrdConfig.RunMigrations = false;
                     onwrdConfig.UseOnwardProcessors(pcsConfig =>
                     {
                         pcsConfig.Register<TestEvent, TestEventOnwardProcessor>();
@@ -136,8 +136,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
             this.database = supportedDatabase.TestcontainerDatabase;
             await this.database.StartAsync();
 
-            /* Create a version of the database without any Onwrd schema by configuring a context
-             * with has no onwrd models added */
+            /* Create the database by configuring the context */
             var contextBuilder = new DbContextOptionsBuilder<TestContext>();
             supportedDatabase.Configure(contextBuilder, databaseName);
 
@@ -153,6 +152,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
                 },
                 onwrdConfig =>
                 {
+                    onwrdConfig.RunMigrations = false;
                     onwrdConfig.UseOnwardProcessor<TestOnwardProcessor>();
                     onwrdConfig.ConfigureRetryOptions(retryConfig =>
                     {
@@ -200,8 +200,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
             this.database = supportedDatabase.TestcontainerDatabase;
             await this.database.StartAsync();
 
-            /* Create a version of the database without any Onwrd schema by configuring a context
-             * with has no onwrd models added */
+            /* Create the database by configuring the context */
             var contextBuilder = new DbContextOptionsBuilder<TestContext>();
             supportedDatabase.Configure(contextBuilder, databaseName);
 
@@ -217,6 +216,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
                 },
                 onwrdConfig =>
                 {
+                    onwrdConfig.RunMigrations = false;
                     onwrdConfig.UseOnwardProcessor<TestOnwardProcessor>();
                 });
 
@@ -254,6 +254,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
                     .Property(x => x.Id)
                     .ValueGeneratedNever();
 
+                modelBuilder.AddOnwrdModel();
                 base.OnModelCreating(modelBuilder);
             }
         }

@@ -12,7 +12,6 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.HasDefaultSchema("Onwrd");
-
             base.OnModelCreating(modelBuilder);
         }
     }

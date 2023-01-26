@@ -142,7 +142,6 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             {
                 var optionsBuilder = new DbContextOptionsBuilder<TestContext>();
                 optionsBuilder.UseInMemoryDatabase(databaseName);
-                optionsBuilder.AddOnwrdModel();
                 optionsBuilder.AddInterceptors(
                     new SaveChangesInterceptor<TestContext>(
                         unitOfWork));
@@ -152,6 +151,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
+                modelBuilder.AddOnwrdModel();
                 base.OnModelCreating(modelBuilder);
             }
         }

@@ -58,7 +58,6 @@ namespace Onwrd.EntityFrameworkCore
             void optionsActionOverride(IServiceProvider serviceProvider, DbContextOptionsBuilder builder)
             {
                 optionsAction(serviceProvider, builder);
-                builder.AddOnwrdModel();
                 builder.AddInterceptors(
                     serviceProvider.GetRequiredService<SaveChangesInterceptor<TContext>>(),
                     serviceProvider.GetRequiredService<OnConnectingInterceptor>());
@@ -75,7 +74,6 @@ namespace Onwrd.EntityFrameworkCore
             void migrationOptionsActionOverride(IServiceProvider serviceProvider, DbContextOptionsBuilder builder)
             {
                 optionsAction(serviceProvider, builder);
-                builder.AddOnwrdModel();
                 builder.ReplaceService<IMigrator, OnwrdMigrator>();
             }
 

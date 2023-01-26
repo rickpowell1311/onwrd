@@ -75,6 +75,12 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             public TestContext(DbContextOptions<TestContext> options) : base(options)
             {
             }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder)
+            {
+                modelBuilder.AddOnwrdModel();
+                base.OnModelCreating(modelBuilder);
+            }
         }
     }
 }
