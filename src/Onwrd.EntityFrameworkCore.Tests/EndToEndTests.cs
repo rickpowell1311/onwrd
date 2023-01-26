@@ -76,6 +76,57 @@ namespace Onwrd.EntityFrameworkCore.Tests
 
         [Theory]
         [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
+        public async Task SaveChanges_ForSupportedDatabase_ProcessesEventWithIndividualOnwardProcessor(ISupportedDatabase supportedDatabase)
+        {
+            var databaseName = $"OnwrdTest-{Guid.NewGuid()}";
+
+            // Start the container 
+            this.database = supportedDatabase.TestcontainerDatabase;
+            await this.database.StartAsync();
+
+            /* Create a version of the database without any Onwrd schema by configuring a context
+             * with has no onwrd models added */
+            var contextBuilder = new DbContextOptionsBuilder<TestContext>();
+            supportedDatabase.Configure(contextBuilder, databaseName);
+
+            var databaseCreationContext = new TestContext(contextBuilder.Options);
+            await databaseCreationContext.Database.EnsureCreatedAsync();
+
+            // Configure the context with Onwrd in a service provider
+            var services = new ServiceCollection();
+            services.AddDbContext<TestContext>(
+                (_, builder) =>
+                {
+                    supportedDatabase.Configure(builder, databaseName);
+                },
+                onwrdConfig =>
+                {
+                    onwrdConfig.UseOnwardProcessors(pcsConfig =>
+                    {
+                        pcsConfig.Register<TestEvent, TestEventOnwardProcessor>();
+                    });
+                });
+
+            services.AddSingleton<ProcessedEventAudit>();
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            var context = serviceProvider.GetService<TestContext>();
+
+            var testEntity = new TestEntity();
+            testEntity.RaiseEvent();
+
+            context.TestEntities.Add(testEntity);
+
+            await context.SaveChangesAsync();
+
+            var processedEventAudit = serviceProvider.GetService<ProcessedEventAudit>();
+
+            Assert.Single(processedEventAudit.ProcessedEvents);
+        }
+
+        [Theory]
+        [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
         public async Task RetryOnwardProcessing_ForSupportedDatabaseWithUnprocessedEvent_ProcessesEvent(
             ISupportedDatabase supportedDatabase)
         {
@@ -183,6 +234,23 @@ namespace Onwrd.EntityFrameworkCore.Tests
             public TestEvent(string sender)
             {
                 Greeting = $"Hello from {sender}";
+            }
+        }
+
+        internal class TestEventOnwardProcessor : IOnwardProcessor<TestEvent>
+        {
+            private readonly ProcessedEventAudit processedEventAudit;
+
+            public TestEventOnwardProcessor(ProcessedEventAudit processedEventAudit)
+            {
+                this.processedEventAudit = processedEventAudit;
+            }
+
+            public Task Process(TestEvent @event, EventMetadata eventMetadata, CancellationToken cancellationToken = default)
+            {
+                this.processedEventAudit.Audit(@event);
+
+                return Task.CompletedTask;
             }
         }
 

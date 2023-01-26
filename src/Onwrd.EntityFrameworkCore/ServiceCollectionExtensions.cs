@@ -24,6 +24,7 @@ namespace Onwrd.EntityFrameworkCore
 
             serviceCollection.AddScoped<SaveChangesInterceptor<TContext>>();
             serviceCollection.AddTransient<IOnwardProcessingUnitOfWork<TContext>, OnwardProcessingUnitOfWork<TContext>>();
+            serviceCollection.AddTransient<IOnwardProcessorOrchestrator, OnwardProcessorOrchestrator>();
             serviceCollection.AddTransient<OnConnectingInterceptor>();
             serviceCollection.AddSingleton<RunOnce>();
             serviceCollection.AddTransient<Startup>();
@@ -79,8 +80,6 @@ namespace Onwrd.EntityFrameworkCore
                 migrationOptionsActionOverride,
                 ServiceLifetime.Transient,
                 ServiceLifetime.Transient);
-
-            // 
 
             return serviceCollection;
         }

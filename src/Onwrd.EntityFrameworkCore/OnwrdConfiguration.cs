@@ -19,7 +19,6 @@ namespace Onwrd.EntityFrameworkCore
         internal OnwrdConfiguration()
         {
             RetryConfiguration = new OnwrdRetryConfiguration();
-            OnwardProcessorType = typeof(NoOpOnwardProcessor);
             OnwrdProcessorsConfiguration = new OnwrdProcessorsConfiguration();
         }
 
