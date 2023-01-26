@@ -24,7 +24,7 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations
             IRelationalCommandDiagnosticsLogger commandLogger, 
             IDatabaseProvider databaseProvider) : 
                 base(
-                    migrationsAssembly,
+                    OverrideMigrationsAssembly(migrationsAssembly),
                     OverrideHistoryRepositorySchema(historyRepository, databaseProvider),
                     databaseCreator,
                     migrationsSqlGenerator,
@@ -74,6 +74,27 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations
             tableSchemaField.SetValue(historyRepository, schemaName);
 
             return historyRepository;
+        }
+
+        private static IMigrationsAssembly OverrideMigrationsAssembly(
+            IMigrationsAssembly migrationsAssembly)
+        {
+            var propertyName = "Assembly";
+            var readonlyBackingFieldName = $"<{propertyName}>k__BackingField";
+
+            var assemblyBackingField = typeof(MigrationsAssembly)
+                .GetField(
+                    readonlyBackingFieldName,
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+            if (assemblyBackingField == null)
+            {
+                throw new Exception("Unable to configure EF core migrations assembly for Onwrd migrations");
+            }
+
+            assemblyBackingField.SetValue(migrationsAssembly, typeof(MigrationContext).Assembly);
+
+            return migrationsAssembly;
         }
     }
 }
