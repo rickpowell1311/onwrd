@@ -12,9 +12,9 @@ namespace Onwrd.EntityFrameworkCore
 
         public bool RunMigrations { get; set; } = true;
 
-        public bool UseOnwrdProcessor { get; private set; }
+        internal bool UseOnwrdProcessor { get; private set; }
 
-        public bool UseOnwrdProcessors { get; private set; }
+        internal bool UseOnwrdProcessors { get; private set; }
 
         internal OnwrdConfiguration()
         {
