@@ -7,14 +7,14 @@ namespace Onwrd.EntityFrameworkCore.Internal
         where TContext : DbContext
     {
         private readonly IServiceProvider serviceProvider;
-        private readonly IOnwardProcessor onwardProcessor;
+        private readonly IOnwardProcessorOrchestrator onwardProcessorOrchestrator;
 
         public OnwardProcessingUnitOfWork(
             IServiceProvider serviceProvider,
-            IOnwardProcessor onwardProcessor)
+            IOnwardProcessorOrchestrator onwardProcessorOrchestrator)
         {
             this.serviceProvider = serviceProvider;
-            this.onwardProcessor = onwardProcessor;
+            this.onwardProcessorOrchestrator = onwardProcessorOrchestrator;
         }
 
         public async Task<UnitOfWorkResult> ProcessEvent(Guid eventId, CancellationToken cancellationToken)
@@ -68,7 +68,7 @@ namespace Onwrd.EntityFrameworkCore.Internal
 
             var contents = @event.DeserializeContents();
 
-            await onwardProcessor.ProcessEvent((@event, contents), cancellationToken);
+            await onwardProcessorOrchestrator.Process((@event, contents), scope, cancellationToken);
 
             @event.DispatchedOn = DateTime.UtcNow;
 

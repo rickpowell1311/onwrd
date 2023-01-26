@@ -9,13 +9,13 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
     public class SaveChangesInterceptorTests
     {
         private readonly string databaseName;
-        private readonly TestOnwardProcessor onwardProcessor;
+        private readonly TestOnwardProcessorOrchestrator onwardProcessor;
         private readonly IOnwardProcessingUnitOfWork<TestContext> unitOfWork;
 
         public SaveChangesInterceptorTests()
         {
             this.databaseName = $"OnwardTest-{Guid.NewGuid()}";
-            this.onwardProcessor = new TestOnwardProcessor();
+            this.onwardProcessor = new TestOnwardProcessorOrchestrator();
 
             var services = new ServiceCollection();
             services.AddTransient(sp => Context());
@@ -173,27 +173,27 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             }
         }
 
-        internal class TestOnwardProcessor : IOnwardProcessor
+        internal class TestOnwardProcessorOrchestrator : IOnwardProcessorOrchestrator
         {
             public bool ShouldThrow { get; set; }
 
-            private readonly List<(object Event, EventMetadata Metadata)> _processed;
+            private readonly List<object> _processed;
 
-            public IEnumerable<(object Event, EventMetadata Metadata)> Processed => _processed;
+            public IEnumerable<object> Processed => _processed;
 
-            public TestOnwardProcessor()
+            public TestOnwardProcessorOrchestrator()
             {
-                _processed = new List<(object Event, EventMetadata Metadata)>();
+                _processed = new List<object>();
             }
 
-            public Task Process<T>(T @event, EventMetadata eventMetadata, CancellationToken cancellationToken = default)
+            public Task Process((Event Event, object Contents) eventPair, IServiceScope _, CancellationToken cancellationToken = default)
             {
                 if (ShouldThrow)
                 {
                     throw new Exception("Couldn't process the event :(");
                 }
 
-                _processed.Add((@event, eventMetadata));
+                _processed.Add(eventPair.Contents);
 
                 return Task.CompletedTask;
             }

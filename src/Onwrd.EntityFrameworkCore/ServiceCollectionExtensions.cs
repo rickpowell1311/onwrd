@@ -22,17 +22,33 @@ namespace Onwrd.EntityFrameworkCore
 
             serviceCollection.AddSingleton(config);
 
-            if (!serviceCollection.Any(x => x.ServiceType == config.OnwardProcessorType))
-            {
-                serviceCollection.AddTransient(typeof(IOnwardProcessor), config.OnwardProcessorType);
-            }
-
             serviceCollection.AddScoped<SaveChangesInterceptor<TContext>>();
             serviceCollection.AddTransient<IOnwardProcessingUnitOfWork<TContext>, OnwardProcessingUnitOfWork<TContext>>();
+            serviceCollection.AddTransient<IOnwardProcessorOrchestrator, OnwardProcessorOrchestrator>();
             serviceCollection.AddTransient<OnConnectingInterceptor>();
             serviceCollection.AddSingleton<RunOnce>();
             serviceCollection.AddTransient<Startup>();
             serviceCollection.AddTransient<IWait, Wait>();
+
+            // Onward processors
+            if (config.UseOnwrdProcessor && !serviceCollection.Any(x => x.ServiceType == config.OnwardProcessorType))
+            {
+                serviceCollection.AddTransient(typeof(IOnwardProcessor), config.OnwardProcessorType);
+            }
+
+            if (config.UseOnwrdProcessors)
+            {
+                foreach (var (type, processorTypes) in config.OnwrdProcessorsConfiguration.Library.Entries)
+                {
+                    var serviceType = typeof(IOnwardProcessor<>)
+                        .MakeGenericType(type);
+
+                    foreach (var processorType in processorTypes)
+                    {
+                        serviceCollection.AddTransient(serviceType, processorType);
+                    }
+                }
+            }
 
             // Retries
             serviceCollection.AddTransient<IOnwardRetryManager<TContext>, OnwardRetryManager<TContext>>();
