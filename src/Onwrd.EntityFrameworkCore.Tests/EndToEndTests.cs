@@ -165,16 +165,21 @@ namespace Onwrd.EntityFrameworkCore.Tests
 
             var serviceProvider = services.BuildServiceProvider();
 
-            /* Add a message to the context directly so that the 
-             * message is not processed immediately */
             var context = serviceProvider.GetRequiredService<TestContext>();
-            context
-                .Set<Event>()
-                .Add(Event.FromContents(new TestEvent("Test")));
+            context.RaiseEvent(new TestEvent("Test"));
 
             await context.SaveChangesAsync();
 
-            Assert.Empty(serviceProvider.GetService<ProcessedEventAudit>().ProcessedEvents);
+            /* Mark the event as unprocessed, and clear the audit so that the retry can be tested for an existing event */
+            serviceProvider.GetService<ProcessedEventAudit>().Clear();
+            var @event = await context.Set<Event>().SingleAsync();
+            await context.Entry(@event).ReloadAsync();
+            @event.DispatchedOn = null;
+
+            await context.SaveChangesAsync();
+
+            var existingEvents = await context.Set<Event>().ToListAsync();
+            Assert.Single(existingEvents);
 
             /* Ensure the retry manager processes the message */
             var retryManager = serviceProvider.GetService<IOnwardRetryManager<TestContext>>();
@@ -182,6 +187,51 @@ namespace Onwrd.EntityFrameworkCore.Tests
             await retryManager.RetryOnwardProcessing(CancellationToken.None);
 
             Assert.Single(serviceProvider.GetService<ProcessedEventAudit>().ProcessedEvents);
+        }
+
+
+        [Theory]
+        [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
+        public async Task SaveChanges_WhenEventAddedDirectlyToContextForSupportedDatabase_ProcessesEvent(ISupportedDatabase supportedDatabase)
+        {
+            var databaseName = $"OnwrdTest-{Guid.NewGuid()}";
+
+            // Start the container 
+            this.database = supportedDatabase.TestcontainerDatabase;
+            await this.database.StartAsync();
+
+            /* Create a version of the database without any Onwrd schema by configuring a context
+             * with has no onwrd models added */
+            var contextBuilder = new DbContextOptionsBuilder<TestContext>();
+            supportedDatabase.Configure(contextBuilder, databaseName);
+
+            var databaseCreationContext = new TestContext(contextBuilder.Options);
+            await databaseCreationContext.Database.EnsureCreatedAsync();
+
+            // Configure the context with Onwrd in a service provider
+            var services = new ServiceCollection();
+            services.AddDbContext<TestContext>(
+                (_, builder) =>
+                {
+                    supportedDatabase.Configure(builder, databaseName);
+                },
+                onwrdConfig =>
+                {
+                    onwrdConfig.UseOnwardProcessor<TestOnwardProcessor>();
+                });
+
+            services.AddSingleton<ProcessedEventAudit>();
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            var context = serviceProvider.GetService<TestContext>();
+            context.RaiseEvent(new TestEvent { Greeting = "Hello!" });
+
+            await context.SaveChangesAsync();
+
+            var processedEventAudit = serviceProvider.GetService<ProcessedEventAudit>();
+
+            Assert.Single(processedEventAudit.ProcessedEvents);
         }
 
         internal class TestContext : DbContext
@@ -285,6 +335,11 @@ namespace Onwrd.EntityFrameworkCore.Tests
             public void Audit(object @event)
             {
                 _processedEvents.Add(@event);
+            }
+
+            public void Clear()
+            {
+                _processedEvents.Clear();
             }
         }
     }

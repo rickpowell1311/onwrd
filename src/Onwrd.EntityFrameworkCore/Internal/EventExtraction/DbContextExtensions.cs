@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Onwrd.EntityFrameworkCore.Internal.EventExtraction
 {
@@ -16,7 +17,7 @@ namespace Onwrd.EntityFrameworkCore.Internal.EventExtraction
             return events;
         }
 
-        internal static IEnumerable<Event> AddToEvents(
+        internal static void AddToEvents(
             this DbContext context, 
             List<object> eventsContents)
         {
@@ -25,8 +26,6 @@ namespace Onwrd.EntityFrameworkCore.Internal.EventExtraction
                 .ToList();
 
             context.AddRange(events);
-
-            return events;
         }
     }
 }

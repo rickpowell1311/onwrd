@@ -104,6 +104,19 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             Assert.Equal(2, this.onwardProcessor.Processed.Count());
         }
 
+
+        [Fact]
+        public async Task SaveChangesAsync_WhenEventRaisedDirectlyAgainstContext_AddsEventToEvents()
+        {
+            var context = Context();
+            context.RaiseEvent(new TestEvent { Greeting = "Hello!" });
+
+            await context.SaveChangesAsync();
+            var events = await Context().Set<Event>().ToListAsync();
+
+            Assert.Single(events);
+        }
+
         private TestContext Context()
         {
             return new TestContext(

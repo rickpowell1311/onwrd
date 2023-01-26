@@ -23,9 +23,9 @@ namespace Onwrd.EntityFrameworkCore.Internal
             InterceptionResult<int> result)
         {
             var events = eventData.Context.ExtractEvents();
-            var added = eventData.Context.AddToEvents(events);
+            eventData.Context.AddToEvents(events);
 
-            this.added.AddRange(added.Select(x => x.Id));
+            this.added.AddRange(GetAddedEventIds(eventData.Context));
 
             return base.SavingChanges(eventData, result);
         }
@@ -38,9 +38,9 @@ namespace Onwrd.EntityFrameworkCore.Internal
             var context = eventData.Context;
 
             var events = context.ExtractEvents();
-            var added = eventData.Context.AddToEvents(events);
+            eventData.Context.AddToEvents(events);
 
-            this.added.AddRange(added.Select(x => x.Id));
+            this.added.AddRange(GetAddedEventIds(eventData.Context));
 
             return await base.SavingChangesAsync(eventData, result, cancellationToken);
         }
@@ -65,6 +65,20 @@ namespace Onwrd.EntityFrameworkCore.Internal
             }
 
             return baseResult;
+        }
+
+        private static IEnumerable<Guid> GetAddedEventIds(DbContext context)
+        {
+            var ids = new List<Guid>();
+
+            foreach (var entry in context.ChangeTracker.Entries()
+                .Where(x => x.Entity.GetType() == typeof(Event)
+                    && x.State == EntityState.Added))
+            {
+                ids.Add(((Event)entry.Entity).Id);
+            }
+
+            return ids;
         }
     }
 }
