@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Onwrd.EntityFrameworkCore.Internal;
 using Onwrd.EntityFrameworkCore.Internal.Migrations;
+using Onwrd.EntityFrameworkCore.Internal.Migrations.Updates;
 
 namespace Onwrd.EntityFrameworkCore
 {
@@ -63,11 +64,13 @@ namespace Onwrd.EntityFrameworkCore
                     serviceProvider.GetRequiredService<OnConnectingInterceptor>());
             }
 
-            // Migration services
             serviceCollection.AddDbContext<TContext>(
                 optionsActionOverride,
                 contextLifetime,
                 optionsLifetime);
+
+            // Migration services
+            var migrationServiceCollection = new ServiceCollection();
 
             void migrationOptionsActionOverride(IServiceProvider serviceProvider, DbContextOptionsBuilder builder)
             {
@@ -76,10 +79,13 @@ namespace Onwrd.EntityFrameworkCore
                 builder.ReplaceService<IMigrator, OnwrdMigrator>();
             }
 
-            serviceCollection.AddDbContext<MigrationContext>(
+            migrationServiceCollection.AddDbContext<MigrationContext>(
                 migrationOptionsActionOverride,
                 ServiceLifetime.Transient,
                 ServiceLifetime.Transient);
+
+            var migrationServices = new MigrationServices(migrationServiceCollection.BuildServiceProvider());
+            serviceCollection.AddSingleton(migrationServices);
 
             return serviceCollection;
         }
