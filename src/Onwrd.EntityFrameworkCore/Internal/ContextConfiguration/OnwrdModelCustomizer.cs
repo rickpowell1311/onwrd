@@ -5,8 +5,11 @@ namespace Onwrd.EntityFrameworkCore.Internal.ContextConfiguration
 {
     internal class OnwrdModelCustomizer : ModelCustomizer
     {
-        public OnwrdModelCustomizer(ModelCustomizerDependencies dependencies) : base(dependencies)
+        private readonly IModelCustomizer inner;
+
+        public OnwrdModelCustomizer(IModelCustomizer inner, ModelCustomizerDependencies dependencies) : base(dependencies)
         {
+            this.inner = inner;
         }
 
         public override void Customize(ModelBuilder modelBuilder, DbContext context)
@@ -25,6 +28,8 @@ namespace Onwrd.EntityFrameworkCore.Internal.ContextConfiguration
                 default: 
                     throw new NotSupportedException($"Provider '{context.Database.ProviderName}' is not supported");
             }
+
+            inner.Customize(modelBuilder, context);
         }
     }
 }
