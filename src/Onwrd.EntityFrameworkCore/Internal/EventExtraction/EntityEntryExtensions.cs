@@ -14,6 +14,12 @@ namespace Onwrd.EntityFrameworkCore.Internal.EventExtraction
                 eventRaiser.ClearEvents();
             }
 
+            if (entityEntry.Entity is IEventRaiser interfaceEventRaiser)
+            {
+                events.AddRange(interfaceEventRaiser.GetEvents());
+                interfaceEventRaiser.ClearEvents();
+            }
+
             return events;
         }
     }

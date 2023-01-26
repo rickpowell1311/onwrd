@@ -23,6 +23,22 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal.EventExtraction
         }
 
         [Fact]
+
+        public void ExtractEvents_FromAddedEntityWithInterfaceRaisedEvents_ReturnsEvents()
+        {
+            var context = new TestContext();
+            var entity = new TestEntity();
+            entity.Events.Add(new RaisedEvent("TestMethod"));
+
+            context.TestEntities.Add(entity);
+
+            var result = context.ExtractEvents()
+                .SingleOrDefault(x => x is RaisedEvent m && m.Greeting == "Hello from TestMethod");
+
+            Assert.NotNull(result);
+        }
+
+        [Fact]
         public async void ExtractEvents_FromUpdatedEntityWithRaisedEvent_ReturnsEvent()
         {
             var context = new TestContext();
@@ -104,11 +120,16 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal.EventExtraction
 
                 modelBuilder.Entity<TestEntity>()
                     .OwnsOne(x => x.NavigationEntity);
+
+                modelBuilder.Entity<TestEntity>()
+                    .Ignore(x => x.Events);
             }
         }
 
-        internal class TestEntity : EventRaiser
+        internal class TestEntity : EventRaiser, IEventRaiser
         {
+            public new List<object> Events { get; set; }
+
             public Guid Id { get; set; }
 
             internal TestNavigationEntity NavigationEntity { get; set; }
@@ -116,6 +137,17 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal.EventExtraction
             public TestEntity()
             {
                 Id = Guid.NewGuid();
+                Events = new List<object>();
+            }
+
+            public IEnumerable<object> GetEvents()
+            {
+                return Events;
+            }
+
+            public new void ClearEvents()
+            {
+                Events.Clear();
             }
 
             public void RaiseEvent()

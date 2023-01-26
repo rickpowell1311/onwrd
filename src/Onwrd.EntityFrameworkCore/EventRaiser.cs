@@ -24,4 +24,11 @@ namespace Onwrd.EntityFrameworkCore
             _events.Clear();
         }
     }
+
+    public interface IEventRaiser
+    {
+        IEnumerable<object> GetEvents();
+
+        void ClearEvents();
+    }
 }
