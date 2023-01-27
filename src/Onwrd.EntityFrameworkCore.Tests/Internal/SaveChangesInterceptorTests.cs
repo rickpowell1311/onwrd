@@ -29,7 +29,23 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         public async Task SaveChangesAsync_WhenEventRaised_AddsEventToEvents()
         {
             var entity = new TestEntity();
-            entity.RaiseEvent();
+            entity.RaiseEventViaEventRaiserBaseClass();
+
+            var context = Context();
+
+            context.TestEntities.Add(entity);
+            await context.SaveChangesAsync();
+
+            var events = await Context().Set<Event>().ToListAsync();
+
+            Assert.Single(events);
+        }
+
+        [Fact]
+        public async Task SaveChangesAsync_WhenEventRaisedByInterface_AddsEventToEvents()
+        {
+            var entity = new TestEntity();
+            entity.RaiseEventViaEventRaiserInterface();
 
             var context = Context();
 
@@ -45,7 +61,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         public async Task SaveChangesAsync_WhenEventRaisedAndOnwardProcessorConfigured_ProcessesEvent()
         {
             var entity = new TestEntity();
-            entity.RaiseEvent();
+            entity.RaiseEventViaEventRaiserBaseClass();
 
             var context = Context();
 
@@ -59,7 +75,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         public async Task SaveChangesAsync_WhenOnwardProcessingOfEventIsSuccessful_MarksEventAsDispatched()
         {
             var entity = new TestEntity();
-            entity.RaiseEvent();
+            entity.RaiseEventViaEventRaiserBaseClass();
 
             var context = Context();
 
@@ -75,7 +91,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         public async Task SaveChangesAsync_WhenRaisedEventOnwardProcessingFails_EventIsNotDispatched()
         {
             var entity = new TestEntity();
-            entity.RaiseEvent();
+            entity.RaiseEventViaEventRaiserBaseClass();
 
             var context = Context();
             context.TestEntities.Add(entity);
@@ -93,8 +109,8 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         public async Task SaveChangesAsync_WhenTwoEventsRaisedByEntity_ProcessesEvents()
         {
             var entity = new TestEntity();
-            entity.RaiseEvent();
-            entity.RaiseEvent();
+            entity.RaiseEventViaEventRaiserBaseClass();
+            entity.RaiseEventViaEventRaiserBaseClass();
 
             var context = Context();
 
@@ -156,18 +172,37 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             }
         }
 
-        internal class TestEntity : EventRaiser
+        internal class TestEntity : EventRaiser, IEventRaiser
         {
+            private readonly List<object> _events;
+
             public Guid Id { get; set; }
 
             public TestEntity()
             {
                 Id = Guid.NewGuid();
+
+                _events = new List<object>();
             }
 
-            public void RaiseEvent()
+            public void RaiseEventViaEventRaiserBaseClass()
             {
                 RaiseEvent(new TestEvent("TestEntity"));
+            }
+
+            public void RaiseEventViaEventRaiserInterface()
+            {
+                _events.Add(new TestEvent("TestEntity"));
+            }
+
+            public IEnumerable<object> GetEvents()
+            {
+                return _events;
+            }
+
+            void IEventRaiser.ClearEvents()
+            {
+                _events.Clear();
             }
         }
 

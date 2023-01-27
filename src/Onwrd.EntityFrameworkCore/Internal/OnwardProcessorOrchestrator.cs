@@ -22,7 +22,9 @@ namespace Onwrd.EntityFrameworkCore.Internal
                 var onwrdProcessorType = typeof(IOnwardProcessor<>)
                     .MakeGenericType(eventPair.Contents.GetType());
 
-                var onwrdProcessors = scope.ServiceProvider.GetServices(onwrdProcessorType);
+                var onwrdProcessors = scope.ServiceProvider
+                    .GetServices(onwrdProcessorType)
+                    .DistinctBy(x => x.GetType().GUID); // TODO: Figure out why there is sometimes duplicate registrations here;
 
                 foreach (var onwrdProcessor in onwrdProcessors)
                 {

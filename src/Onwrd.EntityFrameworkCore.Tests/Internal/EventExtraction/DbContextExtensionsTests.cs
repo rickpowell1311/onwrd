@@ -24,6 +24,20 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal.EventExtraction
 
         [Fact]
 
+        public void ExtractEvents_FromAddedEntityWithRaisedEventsAndEventRaisedAgainstContext_OnlyReturnsEntityEvent()
+        {
+            var context = new TestContext();
+            var entity = new TestEntity();
+            entity.RaiseEvent();
+
+            context.TestEntities.Add(entity);
+            context.RaiseEvent(new RaisedEvent { Greeting = "Hello from TestContext" });
+
+            Assert.Single(context.ExtractEvents());
+        }
+
+        [Fact]
+
         public void ExtractEvents_FromAddedEntityWithInterfaceRaisedEvents_ReturnsEvents()
         {
             var context = new TestContext();
@@ -117,6 +131,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal.EventExtraction
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
                 base.OnModelCreating(modelBuilder);
+                modelBuilder.AddOnwrdModel();
 
                 modelBuilder.Entity<TestEntity>()
                     .OwnsOne(x => x.NavigationEntity);
