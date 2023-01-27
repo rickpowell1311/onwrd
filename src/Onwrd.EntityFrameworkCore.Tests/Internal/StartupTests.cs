@@ -45,6 +45,10 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             var startup = serviceProvider.GetService<Startup>();
 
             await startup.InitializeAsync();
+
+            // Verify mapping to Event DbSet is ok
+            using var context = serviceProvider.GetService<TestContext>();
+            _ = await context.Set<Event>().ToListAsync();
         }
 
         [Theory]
@@ -68,6 +72,10 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
             var startup = serviceProvider.GetService<Startup>();
 
             startup.Initialize();
+
+            // Verify mapping to Event DbSet is ok
+            using var context = serviceProvider.GetService<TestContext>();
+            _ = await context.Set<Event>().ToListAsync();
         }
 
         internal class TestContext : DbContext
