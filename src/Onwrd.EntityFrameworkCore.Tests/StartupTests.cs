@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Onwrd.EntityFrameworkCore.Internal;
 using Xunit;
 
-namespace Onwrd.EntityFrameworkCore.Tests.Internal
+namespace Onwrd.EntityFrameworkCore.Tests
 {
     public class StartupTests : IAsyncLifetime
     {
@@ -20,7 +20,7 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         {
             if (database != null)
             {
-                await this.database.DisposeAsync();
+                await database.DisposeAsync();
             }
         }
 
@@ -28,46 +28,19 @@ namespace Onwrd.EntityFrameworkCore.Tests.Internal
         [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
         public async Task InitializeAsync_WhenUsingSupportedDatabaseConfiguration_DoesNotThrow(ISupportedDatabase supportedDatabase)
         {
-            this.database = supportedDatabase.TestcontainerDatabase;
-            await this.database.StartAsync();
+            database = supportedDatabase.TestcontainerDatabase;
+            await database.StartAsync();
 
             var services = new ServiceCollection();
-            var databaseUniqueId = $"onward-{Guid.NewGuid()}";
             services.AddDbContext<TestContext>(
                 (_, builder) =>
                 {
-                    supportedDatabase.Configure(builder, databaseUniqueId);
+                    supportedDatabase.Configure(builder);
                 },
                 onwrdConfig => { },
                 ServiceLifetime.Transient);
 
             var serviceProvider = services.BuildServiceProvider();
-            var startup = serviceProvider.GetService<Startup>();
-
-            // Verify mapping to Event DbSet is ok
-            using var context = serviceProvider.GetService<TestContext>();
-            _ = await context.Set<Event>().ToListAsync();
-        }
-
-        [Theory]
-        [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
-        public async Task Initialize_WhenUsingSupportedDatabaseConfiguration_DoesNotThrow(ISupportedDatabase supportedDatabase)
-        {
-            this.database = supportedDatabase.TestcontainerDatabase;
-            await this.database.StartAsync();
-
-            var services = new ServiceCollection();
-            var databaseUniqueId = $"onward-{Guid.NewGuid()}";
-            services.AddDbContext<TestContext>(
-                (_, builder) =>
-                {
-                    supportedDatabase.Configure(builder, databaseUniqueId);
-                },
-                onwrdConfig => { },
-                ServiceLifetime.Transient);
-
-            var serviceProvider = services.BuildServiceProvider();
-            var startup = serviceProvider.GetService<Startup>();
 
             // Verify mapping to Event DbSet is ok
             using var context = serviceProvider.GetService<TestContext>();

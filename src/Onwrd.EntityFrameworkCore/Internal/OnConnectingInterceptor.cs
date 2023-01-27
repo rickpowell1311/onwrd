@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Diagnostics;
+using Onwrd.EntityFrameworkCore.Internal.Migrations;
 using System.Data.Common;
 
 namespace Onwrd.EntityFrameworkCore.Internal
@@ -6,19 +7,33 @@ namespace Onwrd.EntityFrameworkCore.Internal
     internal class OnConnectingInterceptor : DbConnectionInterceptor
     {
         private readonly RunOnce runOnce;
-        private readonly Startup startup;
+        private readonly OnwrdConfiguration configuration;
+        private readonly IOnwrdMigrator migrator;
 
-        public OnConnectingInterceptor(RunOnce runOnce, Startup startup)
+        public OnConnectingInterceptor(RunOnce runOnce, OnwrdConfiguration configuration, IOnwrdMigrator migrator)
         {
             this.runOnce = runOnce;
-            this.startup = startup;
+            this.configuration = configuration;
+            this.migrator = migrator;
         }
 
         public override async ValueTask<InterceptionResult> ConnectionOpeningAsync(DbConnection connection, ConnectionEventData eventData, InterceptionResult result, CancellationToken cancellationToken = default)
         {
             await base.ConnectionOpeningAsync(connection, eventData, result, cancellationToken);
 
-            await runOnce.ExecuteAsync("startup", startup.InitializeAsync);
+            if (this.configuration.RunMigrations)
+            {
+                await connection.OpenAsync();
+
+                try
+                {
+                    await runOnce.ExecuteAsync("migrations", () => this.migrator.Migrate(connection));
+                }
+                finally
+                {
+                    await connection.CloseAsync();
+                }
+            }
 
             return result;
         }
@@ -27,9 +42,7 @@ namespace Onwrd.EntityFrameworkCore.Internal
         {
             base.ConnectionOpening(connection, eventData, result);
 
-            runOnce.Execute("startup", startup.Initialize);
-
-            return result;
+            throw new NotSupportedException("Synchronous connections to the database are not supported with Onwrd");
         }
     }
 }

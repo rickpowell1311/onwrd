@@ -1,100 +1,30 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
-using Microsoft.EntityFrameworkCore.Migrations.Internal;
-using Microsoft.EntityFrameworkCore.Storage;
+﻿using Onwrd.EntityFrameworkCore.Internal.Migrations.SupportedDatabaseMigrators;
+using System.Data.Common;
 
 namespace Onwrd.EntityFrameworkCore.Internal.Migrations
 {
-    internal class OnwrdMigrator : Migrator
+    internal class OnwrdMigrator : IOnwrdMigrator
     {
-        public OnwrdMigrator(
-            IMigrationsAssembly migrationsAssembly, 
-            IHistoryRepository historyRepository, 
-            IDatabaseCreator databaseCreator, 
-            IMigrationsSqlGenerator migrationsSqlGenerator, 
-            IRawSqlCommandBuilder rawSqlCommandBuilder, 
-            IMigrationCommandExecutor migrationCommandExecutor, 
-            IRelationalConnection connection, 
-            ISqlGenerationHelper sqlGenerationHelper, 
-            ICurrentDbContext currentContext, 
-            IModelRuntimeInitializer modelRuntimeInitializer, 
-            IDiagnosticsLogger<DbLoggerCategory.Migrations> logger, 
-            IRelationalCommandDiagnosticsLogger commandLogger, 
-            IDatabaseProvider databaseProvider) : 
-                base(
-                    OverrideMigrationsAssembly(migrationsAssembly),
-                    OverrideHistoryRepositorySchema(historyRepository, databaseProvider),
-                    databaseCreator,
-                    migrationsSqlGenerator,
-                    rawSqlCommandBuilder,
-                    migrationCommandExecutor,
-                    connection,
-                    sqlGenerationHelper,
-                    currentContext,
-                    modelRuntimeInitializer,
-                    logger,
-                    commandLogger,
-                    databaseProvider)
+        private readonly string dbProvider;
+
+        public OnwrdMigrator(string dbProvider)
         {
+            this.dbProvider = dbProvider;
         }
 
-        private static IHistoryRepository OverrideHistoryRepositorySchema(
-            IHistoryRepository historyRepository,
-            IDatabaseProvider databaseProvider)
+        public async Task Migrate(DbConnection connection)
         {
-            var propertyName = "TableSchema";
-            var readonlyBackingFieldName = $"<{propertyName}>k__BackingField";
-
-            var tableSchemaField = typeof(HistoryRepository)
-                .GetField(
-                    readonlyBackingFieldName,
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-
-            if (tableSchemaField == null)
-            {
-                throw new Exception("Unable to configure EF core migrations HistoryRepository schema for Onwrd");
-            }
-
-            var schemaName = string.Empty;
-
-
-            switch (databaseProvider.Name)
+            switch (this.dbProvider)
             {
                 case "Microsoft.EntityFrameworkCore.SqlServer":
-                    schemaName = "Onwrd";
+                    await new MsSqlServerMigrator().Migrate(connection);
                     break;
                 case "Npgsql.EntityFrameworkCore.PostgreSQL":
-                    schemaName = "onwrd";
+                    await new PostgreSqlMigrator().Migrate(connection);
                     break;
-                throw new NotSupportedException($"Provider '{databaseProvider.Name}' is not supported");
+                default:
+                    throw new NotImplementedException("Database provider not supported");
             }
-
-            tableSchemaField.SetValue(historyRepository, schemaName);
-
-            return historyRepository;
-        }
-
-        private static IMigrationsAssembly OverrideMigrationsAssembly(
-            IMigrationsAssembly migrationsAssembly)
-        {
-            var propertyName = "Assembly";
-            var readonlyBackingFieldName = $"<{propertyName}>k__BackingField";
-
-            var assemblyBackingField = typeof(MigrationsAssembly)
-                .GetField(
-                    readonlyBackingFieldName,
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-
-            if (assemblyBackingField == null)
-            {
-                throw new Exception("Unable to configure EF core migrations assembly for Onwrd migrations");
-            }
-
-            assemblyBackingField.SetValue(migrationsAssembly, typeof(MigrationContext).Assembly);
-
-            return migrationsAssembly;
         }
     }
 }

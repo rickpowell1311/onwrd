@@ -2,6 +2,8 @@
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Data.Common;
 using Xunit;
 
 namespace Onwrd.EntityFrameworkCore.Tests
@@ -41,27 +43,10 @@ namespace Onwrd.EntityFrameworkCore.Tests
                     .Build();
             }
 
-            public void Configure(DbContextOptionsBuilder optionsBuilder, string databaseName)
+            public void Configure(DbContextOptionsBuilder optionsBuilder)
             {
                 optionsBuilder
-                    .UseSqlServer(ReplaceDatabaseInConnectionString(
-                        TestcontainerDatabase.ConnectionString,
-                        databaseName));
-            }
-
-            private static string ReplaceDatabaseInConnectionString(
-                string connectionString,
-                string databaseName)
-            {
-                var databaseConnectionStringComponent = connectionString
-                        .Split(new[] { ';' })
-                        .SingleOrDefault(x => x.Contains("Database"));
-
-                var replacementDatabaseConnectionStringComponent =
-                    $"Database={databaseName}";
-
-                return connectionString
-                    .Replace(databaseConnectionStringComponent, replacementDatabaseConnectionStringComponent);
+                    .UseSqlServer(TestcontainerDatabase.ConnectionString);
             }
         }
 
@@ -82,28 +67,10 @@ namespace Onwrd.EntityFrameworkCore.Tests
             }
 
             public void Configure(
-                DbContextOptionsBuilder optionsBuilder,
-                string databaseName)
+                DbContextOptionsBuilder optionsBuilder)
             {
                 optionsBuilder
-                    .UseNpgsql(ReplaceDatabaseInConnectionString(
-                        TestcontainerDatabase.ConnectionString,
-                        databaseName));
-            }
-
-            private static string ReplaceDatabaseInConnectionString(
-                string connectionString,
-                string databaseName)
-            {
-                var databaseConnectionStringComponent = connectionString
-                        .Split(new[] { ';' })
-                        .SingleOrDefault(x => x.Contains("Database"));
-
-                var replacementDatabaseConnectionStringComponent =
-                    $"Database={databaseName}";
-
-                return connectionString
-                    .Replace(databaseConnectionStringComponent, replacementDatabaseConnectionStringComponent);
+                    .UseNpgsql(TestcontainerDatabase.ConnectionString);
             }
         }
     }

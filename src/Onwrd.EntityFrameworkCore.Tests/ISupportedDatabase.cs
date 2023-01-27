@@ -7,6 +7,6 @@ namespace Onwrd.EntityFrameworkCore.Tests
     {
         TestcontainerDatabase TestcontainerDatabase { get; }
 
-        void Configure(DbContextOptionsBuilder optionsBuilder, string databaseName);
+        void Configure(DbContextOptionsBuilder optionsBuilder);
     }
 }

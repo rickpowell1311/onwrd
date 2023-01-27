@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Onwrd.EntityFrameworkCore.Internal;
 using Onwrd.EntityFrameworkCore.Internal.Migrations;
-using Onwrd.EntityFrameworkCore.Internal.Migrations.Updates;
 
 namespace Onwrd.EntityFrameworkCore
 {
@@ -28,7 +28,6 @@ namespace Onwrd.EntityFrameworkCore
             serviceCollection.AddTransient<IOnwardProcessorOrchestrator, OnwardProcessorOrchestrator>();
             serviceCollection.AddTransient<OnConnectingInterceptor>();
             serviceCollection.AddSingleton<RunOnce>();
-            serviceCollection.AddTransient<Startup>();
             serviceCollection.AddTransient<IWait, Wait>();
 
             // Onward processors
@@ -68,22 +67,15 @@ namespace Onwrd.EntityFrameworkCore
                 contextLifetime,
                 optionsLifetime);
 
-            // Migration services
-            var migrationServiceCollection = new ServiceCollection();
+            // Migrations
+            var migrationsServiceCollection = new ServiceCollection();
+            migrationsServiceCollection.AddDbContext<TContext>(optionsAction);
+            using var migrationsServiceProvider = migrationsServiceCollection.BuildServiceProvider();
+            using var migrationsScope = migrationsServiceProvider.CreateScope();
+            using var migrationsContext = migrationsScope.ServiceProvider.GetService<TContext>();
+            var providerName = migrationsContext.Database.ProviderName;
 
-            void migrationOptionsActionOverride(IServiceProvider serviceProvider, DbContextOptionsBuilder builder)
-            {
-                optionsAction(serviceProvider, builder);
-                builder.ReplaceService<IMigrator, OnwrdMigrator>();
-            }
-
-            migrationServiceCollection.AddDbContext<MigrationContext>(
-                migrationOptionsActionOverride,
-                ServiceLifetime.Transient,
-                ServiceLifetime.Transient);
-
-            var migrationServices = new MigrationServices(migrationServiceCollection.BuildServiceProvider());
-            serviceCollection.AddSingleton(migrationServices);
+            serviceCollection.AddTransient<IOnwrdMigrator>(sp => new OnwrdMigrator(providerName));
 
             return serviceCollection;
         }

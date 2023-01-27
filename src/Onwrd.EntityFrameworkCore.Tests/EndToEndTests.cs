@@ -30,15 +30,13 @@ namespace Onwrd.EntityFrameworkCore.Tests
         [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
         public async Task SaveChanges_ForSupportedDatabase_ProcessesEvent(ISupportedDatabase supportedDatabase)
         {
-            var databaseName = $"OnwrdTest-{Guid.NewGuid()}";
-
             // Start the container 
             this.database = supportedDatabase.TestcontainerDatabase;
             await this.database.StartAsync();
 
             /* Create the database by configuring the context */
             var contextBuilder = new DbContextOptionsBuilder<TestContext>();
-            supportedDatabase.Configure(contextBuilder, databaseName);
+            supportedDatabase.Configure(contextBuilder);
 
             var databaseCreationContext = new TestContext(contextBuilder.Options);
             await databaseCreationContext.Database.EnsureCreatedAsync();
@@ -48,7 +46,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
             services.AddDbContext<TestContext>(
                 (_, builder) =>
                 {
-                    supportedDatabase.Configure(builder, databaseName);
+                    supportedDatabase.Configure(builder);
                 },
                 onwrdConfig =>
                 {
@@ -78,15 +76,13 @@ namespace Onwrd.EntityFrameworkCore.Tests
         [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
         public async Task SaveChanges_ForSupportedDatabase_ProcessesEventWithIndividualOnwardProcessor(ISupportedDatabase supportedDatabase)
         {
-            var databaseName = $"OnwrdTest-{Guid.NewGuid()}";
-
             // Start the container 
             this.database = supportedDatabase.TestcontainerDatabase;
             await this.database.StartAsync();
 
             /* Create the database by configuring the context */
             var contextBuilder = new DbContextOptionsBuilder<TestContext>();
-            supportedDatabase.Configure(contextBuilder, databaseName);
+            supportedDatabase.Configure(contextBuilder);
 
             var databaseCreationContext = new TestContext(contextBuilder.Options);
             await databaseCreationContext.Database.EnsureCreatedAsync();
@@ -96,7 +92,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
             services.AddDbContext<TestContext>(
                 (_, builder) =>
                 {
-                    supportedDatabase.Configure(builder, databaseName);
+                    supportedDatabase.Configure(builder);
                 },
                 onwrdConfig =>
                 {
@@ -130,15 +126,13 @@ namespace Onwrd.EntityFrameworkCore.Tests
         public async Task RetryOnwardProcessing_ForSupportedDatabaseWithUnprocessedEvent_ProcessesEvent(
             ISupportedDatabase supportedDatabase)
         {
-            var databaseName = $"OnwrdTest-{Guid.NewGuid()}";
-
             // Start the container 
             this.database = supportedDatabase.TestcontainerDatabase;
             await this.database.StartAsync();
 
             /* Create the database by configuring the context */
             var contextBuilder = new DbContextOptionsBuilder<TestContext>();
-            supportedDatabase.Configure(contextBuilder, databaseName);
+            supportedDatabase.Configure(contextBuilder);
 
             var databaseCreationContext = new TestContext(contextBuilder.Options);
             await databaseCreationContext.Database.EnsureCreatedAsync();
@@ -148,7 +142,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
             services.AddDbContext<TestContext>(
                 (_, builder) =>
                 {
-                    supportedDatabase.Configure(builder, databaseName);
+                    supportedDatabase.Configure(builder);
                 },
                 onwrdConfig =>
                 {
@@ -194,15 +188,13 @@ namespace Onwrd.EntityFrameworkCore.Tests
         [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
         public async Task SaveChanges_WhenEventAddedDirectlyToContextForSupportedDatabase_ProcessesEvent(ISupportedDatabase supportedDatabase)
         {
-            var databaseName = $"OnwrdTest-{Guid.NewGuid()}";
-
             // Start the container 
             this.database = supportedDatabase.TestcontainerDatabase;
             await this.database.StartAsync();
 
             /* Create the database by configuring the context */
             var contextBuilder = new DbContextOptionsBuilder<TestContext>();
-            supportedDatabase.Configure(contextBuilder, databaseName);
+            supportedDatabase.Configure(contextBuilder);
 
             var databaseCreationContext = new TestContext(contextBuilder.Options);
             await databaseCreationContext.Database.EnsureCreatedAsync();
@@ -212,7 +204,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
             services.AddDbContext<TestContext>(
                 (_, builder) =>
                 {
-                    supportedDatabase.Configure(builder, databaseName);
+                    supportedDatabase.Configure(builder);
                 },
                 onwrdConfig =>
                 {
