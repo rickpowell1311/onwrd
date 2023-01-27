@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore.Diagnostics;
-using Onwrd.EntityFrameworkCore.Internal.Migrations;
 using System.Data.Common;
 
 namespace Onwrd.EntityFrameworkCore.Internal

@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
+using Onwrd.EntityFrameworkCore;
 using Onwrd.EntityFrameworkCore.Internal;
 using Onwrd.EntityFrameworkCore.Internal.Migrations;
 
