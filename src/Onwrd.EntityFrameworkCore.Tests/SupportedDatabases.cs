@@ -36,8 +36,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
                 TestcontainerDatabase = new TestcontainersBuilder<MsSqlTestcontainer>()
                     .WithDatabase(new MsSqlTestcontainerConfiguration
                     {
-                        Password = "Qx#)T@pzKgAV^+tw",
-                        Port = 1433,
+                        Password = "Qx#)T@pzKgAV^+tw"
                     })
                     .Build();
             }
@@ -77,8 +76,7 @@ namespace Onwrd.EntityFrameworkCore.Tests
                     {
                         Database = "db",
                         Username = "postgres",
-                        Password = "postgres",
-                        Port = 5432
+                        Password = "postgres"
                     })
                     .Build();
             }

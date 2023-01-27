@@ -14,18 +14,22 @@ namespace Onwrd.EntityFrameworkCore.Internal
             this.startup = startup;
         }
 
-        public override async Task ConnectionOpenedAsync(DbConnection connection, ConnectionEndEventData eventData, CancellationToken cancellationToken = default)
+        public override async ValueTask<InterceptionResult> ConnectionOpeningAsync(DbConnection connection, ConnectionEventData eventData, InterceptionResult result, CancellationToken cancellationToken = default)
         {
-            await base.ConnectionOpenedAsync(connection, eventData, cancellationToken);
+            await base.ConnectionOpeningAsync(connection, eventData, result, cancellationToken);
 
             await runOnce.ExecuteAsync("startup", startup.InitializeAsync);
+
+            return result;
         }
 
-        public override void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)
+        public override InterceptionResult ConnectionOpening(DbConnection connection, ConnectionEventData eventData, InterceptionResult result)
         {
-            base.ConnectionOpened(connection, eventData);
+            base.ConnectionOpening(connection, eventData, result);
 
             runOnce.Execute("startup", startup.Initialize);
+
+            return result;
         }
     }
 }
