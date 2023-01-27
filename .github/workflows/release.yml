@@ -11,15 +11,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Evaluate build version
-        run: echo "VERSION=0.4.${{ github.run_number }}-beta" >> $GITHUB_ENV
 
       - name: Run NUKE build
         working-directory: ./pipelines/build/build
         run: dotnet run
         env:
           ARTIFACT_DIRECTORY: "./artifacts"
+      
+      - name: Evaluate build version
+        run: echo "VERSION=0.4.${{ github.run_number }}-beta" >> $GITHUB_ENV
 
       - name: Run NUKE release (Push to NuGet)
         working-directory: ./pipelines/deploy/build
