@@ -40,7 +40,7 @@ class Build : NukeBuild
             Console.WriteLine($"{nameof(ProjectDirectories)}: {ProjectDirectories.Select(x => $"\r\n  - {x}").Aggregate((prev, curr) => $"{prev}{curr}")}");
             Console.WriteLine($"{nameof(Configuration)}: {Configuration}");
             Console.WriteLine($"{nameof(Version)}: {Version}");
-            Console.WriteLine($"{nameof(NuGetApiKey)}: {(string.IsNullOrWhiteSpace(NuGetApiKey) ? "********" : "EMPTY" )}");
+            Console.WriteLine($"{nameof(NuGetApiKey)}: {(!string.IsNullOrWhiteSpace(NuGetApiKey) ? "********" : "EMPTY" )}");
         });
 
     Target Clean => _ => _
