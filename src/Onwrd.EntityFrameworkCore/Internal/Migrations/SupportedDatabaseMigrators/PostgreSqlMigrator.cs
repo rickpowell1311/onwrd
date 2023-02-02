@@ -4,24 +4,26 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations.SupportedDatabaseMigrato
 {
     internal class PostgreSqlMigrator
     {
-        public async Task Migrate(DbConnection connection)
+        public static async Task MigrateAsync(DbConnection connection)
         {
-            await CreateSchema(connection);
-            await CreateEventsTable(connection);
+            await connection.ExecuteSqlAsync(CreateSchemaSql());
+            await connection.ExecuteSqlAsync(CreateEventsTableSql());
         }
 
-        private static async Task CreateSchema(DbConnection connection)
+        public static void Migrate(DbConnection connection)
         {
-            var createSchema = "CREATE SCHEMA IF NOT EXISTS \"Onwrd\";";
-
-            var command = connection.CreateCommand();
-            command.CommandText = createSchema;
-            await command.ExecuteNonQueryAsync();
+            connection.ExecuteSql(CreateSchemaSql());
+            connection.ExecuteSql(CreateEventsTableSql());
         }
 
-        private static async Task CreateEventsTable(DbConnection connection)
+        private static string CreateSchemaSql()
         {
-            var createEventsTable = @"
+            return "CREATE SCHEMA IF NOT EXISTS \"Onwrd\";";
+        }
+
+        private static string CreateEventsTableSql()
+        {
+            return @"
                 CREATE TABLE IF NOT EXISTS ""Onwrd"".""Events""
                 (
 	                ""Id"" UUID NOT NULL,
@@ -35,10 +37,6 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations.SupportedDatabaseMigrato
 
                 CREATE INDEX IF NOT EXISTS ""IX_Onwrd_Events_DispatchedOn"" ON ""Onwrd"".""Events"" USING btree (""DispatchedOn"");
                 END";
-
-            var command = connection.CreateCommand();
-            command.CommandText = createEventsTable;
-            await command.ExecuteNonQueryAsync();
         }
     }
 }

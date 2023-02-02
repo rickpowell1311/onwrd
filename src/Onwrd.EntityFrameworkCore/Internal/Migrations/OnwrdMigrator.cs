@@ -12,15 +12,30 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations
             this.dbProvider = dbProvider;
         }
 
-        public async Task Migrate(DbConnection connection)
+        public async Task MigrateAsync(DbConnection connection)
         {
             switch (this.dbProvider)
             {
                 case "Microsoft.EntityFrameworkCore.SqlServer":
-                    await new MsSqlServerMigrator().Migrate(connection);
+                    await MsSqlServerMigrator.MigrateAsync(connection);
                     break;
                 case "Npgsql.EntityFrameworkCore.PostgreSQL":
-                    await new PostgreSqlMigrator().Migrate(connection);
+                    await PostgreSqlMigrator.MigrateAsync(connection);
+                    break;
+                default:
+                    throw new NotImplementedException("Database provider not supported");
+            }
+        }
+
+        public void Migrate(DbConnection connection)
+        {
+            switch (this.dbProvider)
+            {
+                case "Microsoft.EntityFrameworkCore.SqlServer":
+                    MsSqlServerMigrator.Migrate(connection);
+                    break;
+                case "Npgsql.EntityFrameworkCore.PostgreSQL":
+                    PostgreSqlMigrator.Migrate(connection);
                     break;
                 default:
                     throw new NotImplementedException("Database provider not supported");
