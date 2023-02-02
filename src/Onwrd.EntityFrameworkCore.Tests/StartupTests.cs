@@ -47,6 +47,29 @@ namespace Onwrd.EntityFrameworkCore.Tests
             _ = await context.Set<Event>().ToListAsync();
         }
 
+        [Theory]
+        [MemberData(nameof(SupportedDatabases.All), MemberType = typeof(SupportedDatabases))]
+        public async Task Initialize_WhenUsingSupportedDatabaseConfiguration_DoesNotThrow(ISupportedDatabase supportedDatabase)
+        {
+            database = supportedDatabase.TestcontainerDatabase;
+            await database.StartAsync();
+
+            var services = new ServiceCollection();
+            services.AddDbContext<TestContext>(
+                (_, builder) =>
+                {
+                    supportedDatabase.Configure(builder);
+                },
+                onwrdConfig => { },
+                ServiceLifetime.Transient);
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            // Verify mapping to Event DbSet is ok
+            using var context = serviceProvider.GetService<TestContext>();
+            _ = context.Set<Event>().ToList();
+        }
+
         internal class TestContext : DbContext
         {
             public TestContext(DbContextOptions<TestContext> options) : base(options)

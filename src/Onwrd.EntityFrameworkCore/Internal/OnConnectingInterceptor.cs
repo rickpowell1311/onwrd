@@ -26,7 +26,7 @@ namespace Onwrd.EntityFrameworkCore.Internal
 
                 try
                 {
-                    await runOnce.ExecuteAsync("migrations", () => this.migrator.Migrate(connection));
+                    await runOnce.ExecuteAsync("migrations", () => this.migrator.MigrateAsync(connection));
                 }
                 finally
                 {
@@ -41,7 +41,21 @@ namespace Onwrd.EntityFrameworkCore.Internal
         {
             base.ConnectionOpening(connection, eventData, result);
 
-            throw new NotSupportedException("Synchronous connections to the database are not supported with Onwrd");
+            if (this.configuration.RunMigrations)
+            {
+                connection.Open();
+
+                try
+                {
+                    runOnce.Execute("migrations", () => this.migrator.Migrate(connection));
+                }
+                finally
+                {
+                    connection.Close();
+                }
+            }
+
+            return result;
         }
     }
 }

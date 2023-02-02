@@ -4,6 +4,8 @@ namespace Onwrd.EntityFrameworkCore
 {
     public interface IOnwrdMigrator
     {
-        Task Migrate(DbConnection connection);
+        Task MigrateAsync(DbConnection connection);
+
+        void Migrate(DbConnection connection);
     }
 }

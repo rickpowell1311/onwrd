@@ -4,28 +4,30 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations.SupportedDatabaseMigrato
 {
     internal class MsSqlServerMigrator
     {
-        public async Task Migrate(DbConnection connection)
+        public static async Task MigrateAsync(DbConnection connection)
         {
-            await CreateSchema(connection);
-            await CreateEventsTable(connection);
+            await connection.ExecuteSqlAsync(CreateSchemaSql());
+            await connection.ExecuteSqlAsync(CreateEventsTableSql());
         }
 
-        private static async Task CreateSchema(DbConnection connection)
+        public static void Migrate(DbConnection connection)
         {
-            var createSchema = $@"
+            connection.ExecuteSql(CreateSchemaSql());
+            connection.ExecuteSql(CreateEventsTableSql());
+        }
+
+        private static string CreateSchemaSql()
+        {
+            return $@"
                 IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'Onwrd')
                 BEGIN
                     EXEC('CREATE SCHEMA [Onwrd]');
                 END";
-
-            var command = connection.CreateCommand();
-            command.CommandText = createSchema;
-            await command.ExecuteNonQueryAsync();
         }
 
-        private static async Task CreateEventsTable(DbConnection connection)
+        private static string CreateEventsTableSql()
         {
-            var createEventsTable = $@"
+            return $@"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Events')
                 BEGIN
                     CREATE TABLE Onwrd.Events
@@ -40,10 +42,6 @@ namespace Onwrd.EntityFrameworkCore.Internal.Migrations.SupportedDatabaseMigrato
                         INDEX IX_Onwrd_Events_DispatchedOn NONCLUSTERED(DispatchedOn)
                     )
                 END";
-
-            var command = connection.CreateCommand();
-            command.CommandText = createEventsTable;
-            await command.ExecuteNonQueryAsync();
         }
     }
 }
