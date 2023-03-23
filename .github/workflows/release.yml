@@ -19,7 +19,7 @@ jobs:
           ARTIFACT_DIRECTORY: "./artifacts"
       
       - name: Evaluate build version
-        run: echo "VERSION=0.4.${{ github.run_number }}-beta" >> $GITHUB_ENV
+        run: echo "VERSION=0.5.${{ github.run_number }}-beta" >> $GITHUB_ENV
 
       - name: Run NUKE release (Push to NuGet)
         working-directory: ./pipelines/deploy/build
