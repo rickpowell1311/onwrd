@@ -37,7 +37,7 @@ class Build : NukeBuild
         {
             Console.WriteLine($"{nameof(ArtifactDirectory)}: {ArtifactDirectory}");
             Console.WriteLine($"{nameof(NugetArtifactsDirectory)}: {NugetArtifactsDirectory}");
-            Console.WriteLine($"{nameof(ProjectDirectories)}: {ProjectDirectories.Select(x => $"\r\n  - {x}").Aggregate((prev, curr) => $"{prev}{curr}")}");
+            Console.WriteLine($"{nameof(PackagableProjectDirectories)}: {PackagableProjectDirectories.Select(x => $"\r\n  - {x}").Aggregate((prev, curr) => $"{prev}{curr}")}");
             Console.WriteLine($"{nameof(Configuration)}: {Configuration}");
             Console.WriteLine($"{nameof(Version)}: {Version}");
             Console.WriteLine($"{nameof(NuGetApiKey)}: {(!string.IsNullOrWhiteSpace(NuGetApiKey) ? "********" : "EMPTY" )}");
@@ -50,23 +50,13 @@ class Build : NukeBuild
             EnsureCleanDirectory(NugetArtifactsDirectory);
         });
 
-    Target Compile => _ => _
+    Target Pack => _ => _
         .DependsOn(Clean)
         .Executes(() =>
         {
-            foreach (var projectDirectory in ProjectDirectories)
+            foreach (var projectDirectory in PackagableProjectDirectories)
             {
-                DotNet($"build -c {Configuration} -p:Version={Version}", workingDirectory: projectDirectory);
-            }
-        });
-
-    Target Pack => _ => _
-        .DependsOn(Compile)
-        .Executes(() =>
-        {
-            foreach (var projectDirectory in ProjectDirectories)
-            {
-                DotNet($"pack -c {Configuration} -p:PackageVersion={Version} --no-build --no-restore -o {NugetArtifactsDirectory}", workingDirectory: projectDirectory);
+                DotNet($"pack -c {Configuration} -p:PackageVersion={Version} -o {NugetArtifactsDirectory}", workingDirectory: projectDirectory);
             }
         });
 
@@ -94,7 +84,14 @@ class Build : NukeBuild
 
     AbsolutePath DefaultWorkingDirectory => RootDirectory / "../..";
 
-    IEnumerable<AbsolutePath> ProjectDirectories => (DefaultWorkingDirectory / ArtifactDirectory).GlobDirectories("Onwrd.*");
+    static AbsolutePath SourceDirectory => RootDirectory / "../../src";
+
+    static IEnumerable<AbsolutePath> ProjectDirectories => SourceDirectory.GlobDirectories("Onwrd.*");
+
+    static IEnumerable<AbsolutePath> PackagableProjectDirectories => ProjectDirectories
+        .Where(x => !TestProjectDirectories.Contains(x));
+
+    static IEnumerable<AbsolutePath> TestProjectDirectories => SourceDirectory.GlobDirectories("Onwrd.*Tests*");
 
     AbsolutePath NugetArtifactsDirectory => DefaultWorkingDirectory / ArtifactDirectory / "packages";
 
