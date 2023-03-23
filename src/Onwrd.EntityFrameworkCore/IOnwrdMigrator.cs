@@ -1,11 +1,9 @@
-﻿using System.Data.Common;
+﻿using Onwrd.EntityFrameworkCore.Internal.Migrations;
 
 namespace Onwrd.EntityFrameworkCore
 {
-    public interface IOnwrdMigrator
+    internal interface IOnwrdMigrator
     {
-        Task MigrateAsync(DbConnection connection);
-
-        void Migrate(DbConnection connection);
+        IDatabaseMigrator GetDatabaseMigrator();
     }
 }

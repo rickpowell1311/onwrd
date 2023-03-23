@@ -1,45 +1,35 @@
-﻿using Onwrd.EntityFrameworkCore.Internal.Migrations.SupportedDatabaseMigrators;
-using System.Data.Common;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Onwrd.EntityFrameworkCore.Internal.Migrations.SupportedDatabaseMigrators;
 
 namespace Onwrd.EntityFrameworkCore.Internal.Migrations
 {
     internal class OnwrdMigrator : IOnwrdMigrator
     {
-        private readonly string dbProvider;
+        private readonly IServiceProvider serviceProvider;
+        private readonly Func<IServiceProvider, DbContext> contextFactory;
 
-        public OnwrdMigrator(string dbProvider)
+        public OnwrdMigrator(IServiceProvider serviceProvider, Func<IServiceProvider, DbContext> contextFactory)
         {
-            this.dbProvider = dbProvider;
+            this.serviceProvider = serviceProvider;
+            this.contextFactory = contextFactory;
         }
 
-        public async Task MigrateAsync(DbConnection connection)
+        public IDatabaseMigrator GetDatabaseMigrator()
         {
-            switch (this.dbProvider)
+            return GetDbProvider() switch
             {
-                case "Microsoft.EntityFrameworkCore.SqlServer":
-                    await MsSqlServerMigrator.MigrateAsync(connection);
-                    break;
-                case "Npgsql.EntityFrameworkCore.PostgreSQL":
-                    await PostgreSqlMigrator.MigrateAsync(connection);
-                    break;
-                default:
-                    throw new NotImplementedException("Database provider not supported");
-            }
+                "Microsoft.EntityFrameworkCore.SqlServer" => new SqlServerDatabaseMigrator(),
+                "Npgsql.EntityFrameworkCore.PostgreSQL" => new PostgreSqlDatabaseMigrator(),
+                _ => throw new NotImplementedException("Database provider not supported"),
+            };
         }
 
-        public void Migrate(DbConnection connection)
+        private string GetDbProvider()
         {
-            switch (this.dbProvider)
-            {
-                case "Microsoft.EntityFrameworkCore.SqlServer":
-                    MsSqlServerMigrator.Migrate(connection);
-                    break;
-                case "Npgsql.EntityFrameworkCore.PostgreSQL":
-                    PostgreSqlMigrator.Migrate(connection);
-                    break;
-                default:
-                    throw new NotImplementedException("Database provider not supported");
-            }
+            using var scope = serviceProvider.CreateScope();
+            using var context = contextFactory(scope.ServiceProvider);
+            return context.Database.ProviderName;
         }
     }
 }

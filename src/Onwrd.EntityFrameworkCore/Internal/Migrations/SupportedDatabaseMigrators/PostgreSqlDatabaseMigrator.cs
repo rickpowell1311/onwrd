@@ -2,15 +2,15 @@
 
 namespace Onwrd.EntityFrameworkCore.Internal.Migrations.SupportedDatabaseMigrators
 {
-    internal class PostgreSqlMigrator
+    internal class PostgreSqlDatabaseMigrator : IDatabaseMigrator
     {
-        public static async Task MigrateAsync(DbConnection connection)
+        public async Task MigrateAsync(DbConnection connection)
         {
             await connection.ExecuteSqlAsync(CreateSchemaSql());
             await connection.ExecuteSqlAsync(CreateEventsTableSql());
         }
 
-        public static void Migrate(DbConnection connection)
+        public void Migrate(DbConnection connection)
         {
             connection.ExecuteSql(CreateSchemaSql());
             connection.ExecuteSql(CreateEventsTableSql());

@@ -70,12 +70,9 @@ namespace Onwrd.EntityFrameworkCore
             // Migrations
             var migrationsServiceCollection = new ServiceCollection();
             migrationsServiceCollection.AddDbContext<TContext>(optionsAction);
-            using var migrationsServiceProvider = migrationsServiceCollection.BuildServiceProvider();
-            using var migrationsScope = migrationsServiceProvider.CreateScope();
-            using var migrationsContext = migrationsScope.ServiceProvider.GetService<TContext>();
-            var providerName = migrationsContext.Database.ProviderName;
+            var migrationsServiceProvider = migrationsServiceCollection.BuildServiceProvider();
 
-            serviceCollection.AddTransient<IOnwrdMigrator>(sp => new OnwrdMigrator(providerName));
+            serviceCollection.AddTransient<IOnwrdMigrator>(_ => new OnwrdMigrator(migrationsServiceProvider, sp => sp.GetService<TContext>()));
 
             return serviceCollection;
         }

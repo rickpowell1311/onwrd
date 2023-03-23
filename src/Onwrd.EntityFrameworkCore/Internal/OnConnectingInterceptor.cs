@@ -26,7 +26,7 @@ namespace Onwrd.EntityFrameworkCore.Internal
 
                 try
                 {
-                    await runOnce.ExecuteAsync("migrations", () => this.migrator.MigrateAsync(connection));
+                    await runOnce.ExecuteAsync("migrations", () => this.migrator.GetDatabaseMigrator().MigrateAsync(connection));
                 }
                 finally
                 {
@@ -47,7 +47,7 @@ namespace Onwrd.EntityFrameworkCore.Internal
 
                 try
                 {
-                    runOnce.Execute("migrations", () => this.migrator.Migrate(connection));
+                    runOnce.Execute("migrations", () => this.migrator.GetDatabaseMigrator().Migrate(connection));
                 }
                 finally
                 {
