@@ -1,6 +1,6 @@
 ﻿using Onwrd.EntityFrameworkCore.Internal.Migrations;
 
-namespace Onwrd.EntityFrameworkCore
+namespace Onwrd.EntityFrameworkCore.Internal
 {
     internal interface IOnwrdMigrator
     {
