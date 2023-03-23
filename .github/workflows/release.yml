@@ -12,22 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Run NUKE build
-        working-directory: ./pipelines/build/build
-        run: dotnet run
-        env:
-          ARTIFACT_DIRECTORY: "./artifacts"
-      
-      - name: Evaluate build version
-        run: echo "VERSION=0.5.${{ github.run_number }}-beta" >> $GITHUB_ENV
-
       - name: Run NUKE release (Push to NuGet)
         working-directory: ./pipelines/deploy/build
         run: dotnet run
         env:
           NuGetApiKey: ${{ secrets.ONWRD_NUGETAPIKEY }}
           ArtifactDirectory: "./artifacts"
-          Version: ${{ github.VERSION }}
+          Version: 0.5.${{ github.run_number }}-beta
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
